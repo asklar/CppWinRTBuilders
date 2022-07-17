@@ -1,7 +1,7 @@
 ﻿using MiddleweightReflection;
 using System.Reflection;
 
-const string Windows_winmd = @"C:\Program Files (x86)\Windows Kits\10\UnionMetadata\10.0.19041.0\Windows.winmd";
+//const string Windows_winmd = @"C:\Program Files (x86)\Windows Kits\10\UnionMetadata\10.0.19041.0\Windows.winmd";
 var context = new MrLoadContext(false);
 context.FakeTypeRequired += (sender, e) =>
 {
@@ -12,7 +12,7 @@ context.FakeTypeRequired += (sender, e) =>
   }
 };
 
-var windows_winmd = context.LoadAssemblyFromPath(Windows_winmd);
+//var windows_winmd = context.LoadAssemblyFromPath(Windows_winmd);
 
 // var winmds = winmdPaths.Select(winmdPath => context.LoadAssemblyFromPath(winmdPath)).ToList();
 // ToList realizes the list which is needs to happen before FinishLoading is called
@@ -45,7 +45,20 @@ if (outFolder == string.Empty)
 
 context.FinishLoading();
 
-var typesToCodegenFor = windows_winmd.GetAllTypes().Where(t => HasCtor(t) && PassesTypeFilter(t) && CppWinRT.Builders.BuilderTemplate.HasSetters(t));
+var buildersFolder = Path.Combine(outFolder, "winrt", "builders");
+Directory.CreateDirectory(buildersFolder);
+
+foreach (var asm in context.LoadedAssemblies)
+{
+  var typesToCodegenFor = asm.GetAllTypes().Where(t => HasCtor(t) && PassesTypeFilter(t) && CppWinRT.Builders.BuilderTemplate.HasSetters(t));
+
+  foreach (var type in typesToCodegenFor)
+  {
+    var bt = new CppWinRT.Builders.BuilderTemplate(type);
+    var s = bt.TransformText();
+    File.WriteAllText(Path.Combine(buildersFolder, type.GetFullName() + ".h"), s);
+  }
+}
 
 bool PassesTypeFilter(MrType t)
 {
@@ -76,16 +89,6 @@ bool PassesTypeFilter(MrType t)
 
   return passes;
 }
-
-var buildersFolder = Path.Combine(outFolder, "winrt", "builders");
-Directory.CreateDirectory(buildersFolder);
-foreach (var type in typesToCodegenFor)
-{
-  var bt = new CppWinRT.Builders.BuilderTemplate(type);
-  var s = bt.TransformText();
-  File.WriteAllText(Path.Combine(buildersFolder, type.GetFullName() + ".h"), s);
-}
-
 
 bool HasCtor(MrType t)
 {

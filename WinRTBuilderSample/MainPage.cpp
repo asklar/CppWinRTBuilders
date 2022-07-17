@@ -12,7 +12,7 @@ namespace winrt::WinRTBuilderSample::implementation
     {
         InitializeComponent();
 
-        auto button = Controls::builders::Button()
+        auto button = Controls::builders::Button{}
           .Height(40)
           .Width(200)
           .Content(winrt::box_value(L"Hello"));
