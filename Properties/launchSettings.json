@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CppWinRTBuilderCodeGen": {
+      "commandName": "Project",
+      "commandLineArgs": "-o:\"C:\\Users\\asklar\\source\\repos\\CppWinRTBuilderCodeGen\\WinRTBuilderSample\\Generated Files\" -n:Windows.UI.Xaml*"
+    }
+  }
+}
