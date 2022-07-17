@@ -17,7 +17,6 @@ var windows_winmd = context.LoadAssemblyFromPath(Windows_winmd);
 // var winmds = winmdPaths.Select(winmdPath => context.LoadAssemblyFromPath(winmdPath)).ToList();
 // ToList realizes the list which is needs to happen before FinishLoading is called
 
-context.FinishLoading();
 
 var outFolder = string.Empty;
 var namespaces = new List<string>();
@@ -32,13 +31,21 @@ foreach (var arg in args)
   {
     outFolder = arg.Substring(3);
   }
+  else if (arg.StartsWith("-in:"))
+  {
+    context.LoadAssemblyFromPath(arg.Substring(4));
+  }
 }
 
 if (outFolder == string.Empty)
 {
   throw new ArgumentException("Output folder cannot be empty, specify -o:");
 }
-var typesToCodegenFor = windows_winmd.GetAllTypes().Where(t => HasCtor(t) && PassesTypeFilter(t));
+
+
+context.FinishLoading();
+
+var typesToCodegenFor = windows_winmd.GetAllTypes().Where(t => HasCtor(t) && PassesTypeFilter(t) && CppWinRTBuilderCodeGen.BuilderTemplate.HasSetters(t));
 
 bool PassesTypeFilter(MrType t)
 {
@@ -97,12 +104,6 @@ namespace CppWinRTBuilderCodeGen
       _type = t;
     }
 
-    IEnumerable<MrProperty> GetSetters()
-    {
-      var s = _type.GetProperties().Where(HasInstanceSetter);
-      return s;
-    }
-
     static IEnumerable<MrProperty> GetAllSetters(MrType type)
     {
       var s = type.GetProperties().Where(HasInstanceSetter);
@@ -112,6 +113,18 @@ namespace CppWinRTBuilderCodeGen
         s = s.Concat(GetAllSetters(baseType));
       }
       return s;
+    }
+
+    public static bool HasSetters(MrType type)
+    {
+      var s = type.GetProperties().Where(HasInstanceSetter);
+      if (s.Count() != 0) return true;
+      var baseType = type.GetBaseType();
+      if (baseType != null)
+      {
+        return HasSetters(baseType);
+      }
+      return false;
     }
 
     private static bool HasInstanceSetter(MrProperty p)

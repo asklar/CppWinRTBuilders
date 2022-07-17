@@ -1,0 +1,44 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BeforeClCompileTargets>CppWinRTBuildersMakeBuilders;$(BeforeClCompileTargets);</BeforeClCompileTargets>
+
+    <CppWinRTBuildersPackageDir>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\..\))</CppWinRTBuildersPackageDir>
+    <CppWinRTBuildersToolsDir>$(CppWinRTBuildersPackageDir)tools\native\</CppWinRTBuildersToolsDir>
+  </PropertyGroup>
+
+  <Target Name="CppWinRTBuildersMakeBuilders" DependsOnTargets="CppWinRTResolveReferences"
+    Inputs="$(MSBuildAllProjects);@(CppWinRTDirectWinMDReferences);@(CppWinRTStaticProjectWinMDReferences);@(CppWinRTDynamicProjectWinMDReferences);@(CppWinRTPlatformWinMDReferences)"
+    Outputs="dummy"
+    >
+
+    <ItemGroup>
+      <!-- <_CppwinrtBuildersRefInputs Remove="@(_CppwinrtBuildersRefInputs)"/>
+      <_CppwinrtBuildersRefInputs Include="@(CppWinRTDirectWinMDReferences)"/>
+      <_CppwinrtBuildersRefInputs Include="@(CppWinRTDynamicProjectWinMDReferences)"/> -->
+      <_CppwinrtBuildersRefRefs Remove="@(_CppwinrtBuildersRefRefs)"/>
+      <_CppwinrtBuildersRefRefs Include="@(CppWinRTPlatformWinMDReferences)"/>
+    </ItemGroup>
+
+    <!-- <Error Text="_CppwinrtBuildersRefInputs = @(_CppwinrtBuildersRefRefs)" /> -->
+
+    <PropertyGroup>
+      <GeneratedFilesDir Condition="'$(GeneratedFilesDir)' == ''">$(IntDir)Generated Files\</GeneratedFilesDir>
+      <!-- <_CppwinrtBuildersParameters>$(_CppwinrtBuildersParameters) @(_CppwinrtBuildersRefInputs->'-in:&quot;%(WinMDPath)&quot;' )</_CppwinrtBuildersParameters> -->
+      <_CppwinrtBuildersParameters>$(_CppwinrtBuildersParameters) @(_CppwinrtBuildersRefRefs->'-in:&quot;%(WinMDPath)&quot;', ' ')</_CppwinrtBuildersParameters>
+      <_CppwinrtBuildersParameters>$(_CppwinrtBuildersParameters) -o:&quot;$(GeneratedFilesDir).&quot;</_CppwinrtBuildersParameters>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <CppWinRTBuildersCommand>$(CppWinRTBuildersToolsDir)cppwinrtBuilderCodeGen.exe $(_CppwinrtBuildersParameters)</CppWinRTBuildersCommand>
+    </PropertyGroup>
+
+    <Message Text="$(CppWinRTBuildersCommand)" Importance="High" Condition="'@(_CppwinrtBuildersRefRefs)' != ''" />
+    <Exec Command="$(CppWinRTBuildersCommand)" Condition="'@(_CppwinrtBuildersRefRefs)' != ''" />
+
+    <!-- Clean the output file if the target failed to indicate it needs to be rebuild -->
+    <OnError ExecuteTargets="_CppWinRTCleanMakeReferenceProjectionOutputs" />
+
+  </Target>
+
+
+</Project>

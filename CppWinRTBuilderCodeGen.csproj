@@ -1,11 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);GetCustomPackageFiles</TargetsForTfmSpecificContentInPackage>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <PackageId>CppWinRT.Builders</PackageId>
+    <Authors>Alexander Sklar</Authors>
+    <Copyright>Alexander Sklar</Copyright>
+    <PackageProjectUrl>https://github.com/asklar/CppWinRTBuilders</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/asklar/CppWinRTBuilders</RepositoryUrl>
+    <PackageTags>cppwinrt;WinRT;XAML;uwp;WinAppSDK;C++;C++/WinRT;WinUI</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>0.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,4 +51,10 @@
     </Compile>
   </ItemGroup>
 
+  <Target Name="GetCustomPackageFiles">
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(TargetDir)*" Exclude="$(TargetDir)*.pdb" Pack="true" PackagePath="tools/native" />
+      <TfmSpecificPackageFile Include="*.targets" Pack="true" PackagePath="build/native" />
+    </ItemGroup>
+  </Target>
 </Project>
