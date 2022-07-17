@@ -45,7 +45,7 @@ if (outFolder == string.Empty)
 
 context.FinishLoading();
 
-var typesToCodegenFor = windows_winmd.GetAllTypes().Where(t => HasCtor(t) && PassesTypeFilter(t) && CppWinRTBuilderCodeGen.BuilderTemplate.HasSetters(t));
+var typesToCodegenFor = windows_winmd.GetAllTypes().Where(t => HasCtor(t) && PassesTypeFilter(t) && CppWinRT.Builders.BuilderTemplate.HasSetters(t));
 
 bool PassesTypeFilter(MrType t)
 {
@@ -81,7 +81,7 @@ var buildersFolder = Path.Combine(outFolder, "winrt", "builders");
 Directory.CreateDirectory(buildersFolder);
 foreach (var type in typesToCodegenFor)
 {
-  var bt = new CppWinRTBuilderCodeGen.BuilderTemplate(type);
+  var bt = new CppWinRT.Builders.BuilderTemplate(type);
   var s = bt.TransformText();
   File.WriteAllText(Path.Combine(buildersFolder, type.GetFullName() + ".h"), s);
 }
@@ -95,7 +95,7 @@ bool HasCtor(MrType t)
 }
 
 
-namespace CppWinRTBuilderCodeGen
+namespace CppWinRT.Builders
 {
   public partial class BuilderTemplate
   {

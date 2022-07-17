@@ -7,7 +7,7 @@
 //     the code is regenerated.
 // </auto-generated>
 // ------------------------------------------------------------------------------
-namespace CppWinRTBuilderCodeGen
+namespace CppWinRT.Builders
 {
     using System.Linq;
     using System.Text;

@@ -16,7 +16,8 @@
     <RepositoryUrl>https://github.com/asklar/CppWinRTBuilders</RepositoryUrl>
     <PackageTags>cppwinrt;WinRT;XAML;uwp;WinAppSDK;C++;C++/WinRT;WinUI</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>0.0.3</Version>
+    <Description>Generate builder-style helpers for C++/WinRT objects</Description>
+    <Version>0.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>

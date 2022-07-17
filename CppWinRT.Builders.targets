@@ -29,7 +29,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
-      <CppWinRTBuildersCommand>$(CppWinRTBuildersToolsDir)cppwinrtBuilderCodeGen.exe $(_CppwinrtBuildersParameters)</CppWinRTBuildersCommand>
+      <CppWinRTBuildersCommand>$(CppWinRTBuildersToolsDir)cppwinrt.Builders.exe $(_CppwinrtBuildersParameters)</CppWinRTBuildersCommand>
     </PropertyGroup>
 
     <Message Text="$(CppWinRTBuildersCommand)" Importance="High" Condition="'@(_CppwinrtBuildersRefRefs)' != ''" />
