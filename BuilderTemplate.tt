@@ -22,5 +22,18 @@ foreach (var setter in setters) {
 <#
 }
 #>
+<#
+var collectionSetters = GetAllCollectionSetters(_type);
+foreach (var csetter in collectionSetters) {
+#>
+  using super::<#= csetter.GetName() #>;
+  // collection setter: <#= csetter.GetName() #> (from <#= csetter.DeclaringType.GetFullName() #>), of type <#= csetter.GetPropertyType().GetFullName() #>
+  const <#= _type.GetName() #> <#= csetter.GetName() #>(std::initializer_list<<#= GetCppCollectionElementType(csetter.GetPropertyType()) #>> const& value) const {
+    for (const auto& v : value) {
+      super::<#= csetter.GetName() #>().<#= GetInsertOrAppend(csetter.GetPropertyType()) #>;
+    }
+    return *this;
+  }
+<# } #>
 };
 }

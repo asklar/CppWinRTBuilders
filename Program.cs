@@ -45,6 +45,10 @@ if (outFolder == string.Empty)
 
 context.FinishLoading();
 
+if (context.LoadedAssemblies.Count == 0)
+{
+  throw new ArgumentException("No assemblies specified, specify them with -in:");
+}
 var buildersFolder = Path.Combine(outFolder, "winrt", "builders");
 Directory.CreateDirectory(buildersFolder);
 
@@ -118,6 +122,80 @@ namespace CppWinRT.Builders
       return s;
     }
 
+    static IEnumerable<MrProperty> GetAllCollectionSetters(MrType type)
+    {
+      var s = type.GetProperties().Where(p => HasInstanceGetter(p) && IsCollectionProperty(p));
+      var baseType = type.GetBaseType();
+      if (baseType != null)
+      {
+        s = s.Concat(GetAllCollectionSetters(baseType));
+      }
+      return s;
+    }
+
+    private static Dictionary<MrType, bool> collectionProps = new();
+    private const string IVector = "Windows.Foundation.Collections.IVector`1";
+    private const string IMap = "Windows.Foundation.Collections.IMap`2";
+    //private const string IIterable = "Windows.Foundation.Collections.IIterable`1";
+
+    private static bool IsCollectionProperty(MrProperty p)
+    {
+      var type = p.GetPropertyType();
+      if (collectionProps.ContainsKey(type)) return collectionProps[type];
+      bool isIVector = GetIVector(type) != null;
+      var isIMap = GetIMap(type) != null;
+
+      // properties should never be array typed (T[]), since the projected array doesn't have a way to reflect changes to WinRT.
+      if (isIVector || isIMap)
+      {
+        collectionProps[type] = true;
+        return true;
+      }
+      collectionProps[type] = false;
+      return false;
+    }
+
+    private static MrType? GetIMap(MrType type)
+    {
+      return type.GetFullName().Equals(IMap, StringComparison.OrdinalIgnoreCase) ? type : type.GetInterfaces().FirstOrDefault(i => i.GetFullName() == IMap);
+    }
+
+    private static MrType? GetIVector(MrType type)
+    {
+      return type.GetFullName().Equals(IVector, StringComparison.OrdinalIgnoreCase) ? type : type.GetInterfaces().FirstOrDefault(i => i.GetFullName() == IVector);
+    }
+
+    private static string GetCppCollectionElementType(MrType type)
+    {
+      var kind = collectionProps[type];
+      var ivector = GetIVector(type);
+      if (ivector != null)
+      {
+        return GetCppTypeName(ivector.GetGenericArguments().First());
+      }
+
+      var imap = GetIMap(type);
+      if (imap != null)
+      {
+        return $"std::pair<{GetCppTypeName(imap.GetGenericArguments()[0])}, {GetCppTypeName(imap.GetGenericArguments()[1])}>";
+      }
+
+      throw new Exception();
+    }
+
+    private static string GetInsertOrAppend(MrType type)
+    {
+      if (GetIVector(type) != null)
+      {
+        return $"Append(v)";
+      }
+      else if (GetIMap(type) != null)
+      {
+        return $"Insert(v.first, v.second)";
+      }
+      throw new ArgumentException();
+    }
+
     public static bool HasSetters(MrType type)
     {
       var s = type.GetProperties().Where(HasInstanceSetter);
@@ -135,6 +213,13 @@ namespace CppWinRT.Builders
       return p.Setter != null &&
         p.Setter.MethodDefinition.Attributes.HasFlag(MethodAttributes.Public) &&
         !p.Setter.MethodDefinition.Attributes.HasFlag(MethodAttributes.Static);
+    }
+
+    private static bool HasInstanceGetter(MrProperty p)
+    {
+      return p.Getter != null &&
+        p.Getter.MethodDefinition.Attributes.HasFlag(MethodAttributes.Public) &&
+        !p.Getter.MethodDefinition.Attributes.HasFlag(MethodAttributes.Static);
     }
 
     private static string GetCppTypeName(MrType t)

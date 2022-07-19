@@ -23,3 +23,24 @@ This can get repetitive, and some developers prefer a more fluent style.
     .Width(200)
     .Content(winrt::box_value(L"Hello"));
 ```
+
+Collections (such as types that derive from `IVector<T>` and `IMap<T>`) can also be initialized via C++ initializer lists:
+```cpp
+  auto sp = Controls::builders::StackPanel{}
+    .Children({
+      Controls::builders::Button{}
+        .Height(40)
+        .Width(200)
+        .Content(winrt::box_value(L"Hello")),
+      Controls::builders::Button{}
+        .Height(40)
+        .Width(200)
+        .Content(winrt::box_value(L"world")),
+      })
+    .Resources({
+      { winrt::box_value(L"SomeKey"), winrt::box_value(42) }
+      })
+    .Background(Media::SolidColorBrush{ Windows::UI::Colors::AliceBlue() })
+    .Padding(ThicknessHelper::FromUniformLength(8))
+    .Orientation(Controls::Orientation::Horizontal);
+``` 
