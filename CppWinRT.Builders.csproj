@@ -17,6 +17,7 @@
     <PackageTags>cppwinrt;WinRT;XAML;uwp;WinAppSDK;C++;C++/WinRT;WinUI</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Generate builder-style helpers for C++/WinRT objects</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <Version>0.0.6</Version>
   </PropertyGroup>
 
@@ -38,6 +39,9 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>BuilderTemplate.cs</LastGenOutput>
     </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -56,6 +60,7 @@
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(TargetDir)*" Exclude="$(TargetDir)*.pdb" Pack="true" PackagePath="tools/native" />
       <TfmSpecificPackageFile Include="*.targets" Pack="true" PackagePath="build/native" />
+      <TfmSpecificPackageFile Include="README.md" Pack="true" PackagePath="" />
     </ItemGroup>
   </Target>
 </Project>
