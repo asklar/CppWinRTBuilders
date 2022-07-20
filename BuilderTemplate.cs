@@ -182,23 +182,44 @@ foreach (var csetter in collectionSetters) {
             
             #line default
             #line hidden
-            this.Write("> const& value) const {\r\n    for (const auto& v : value) {\r\n      super::");
+            this.Write("> const& value) const {\r\n    ");
+            
+            #line 32 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+ if (GetIVector(csetter.GetPropertyType()) != null) { 
+            
+            #line default
+            #line hidden
+            this.Write("    super::");
             
             #line 33 "F:\CppWinRTBuilders\BuilderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(csetter.GetName()));
             
             #line default
             #line hidden
-            this.Write("().");
+            this.Write("().ReplaceAll({ value.begin(), value.end() });\r\n    ");
             
-            #line 33 "F:\CppWinRTBuilders\BuilderTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(GetInsertOrAppend(csetter.GetPropertyType())));
+            #line 34 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+ } else { 
             
             #line default
             #line hidden
-            this.Write(";\r\n    }\r\n    return *this;\r\n  }\r\n");
+            this.Write("    for (const auto& v : value) {\r\n      super::");
             
-            #line 37 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            #line 36 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(csetter.GetName()));
+            
+            #line default
+            #line hidden
+            this.Write("().Insert(v.first, v.second);\r\n    }\r\n    ");
+            
+            #line 38 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+ } 
+            
+            #line default
+            #line hidden
+            this.Write("    return *this;\r\n  }\r\n");
+            
+            #line 41 "F:\CppWinRTBuilders\BuilderTemplate.tt"
  } 
             
             #line default

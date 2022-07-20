@@ -183,19 +183,6 @@ namespace CppWinRT.Builders
       throw new Exception();
     }
 
-    private static string GetInsertOrAppend(MrType type)
-    {
-      if (GetIVector(type) != null)
-      {
-        return $"Append(v)";
-      }
-      else if (GetIMap(type) != null)
-      {
-        return $"Insert(v.first, v.second)";
-      }
-      throw new ArgumentException();
-    }
-
     public static bool HasSetters(MrType type)
     {
       var s = type.GetProperties().Where(HasInstanceSetter);
