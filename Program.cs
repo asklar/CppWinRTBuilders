@@ -215,6 +215,11 @@ namespace CppWinRT.Builders
             {
                 { "System.String", "winrt::hstring" },
                 { "System.Boolean", "bool" },
+                { "System.Byte", "uint8_t" },
+                { "System.UInt16", "uint16_t" },
+                { "System.UInt32", "uint32_t" },
+                { "System.UInt64", "uint64_t" },
+                { "System.Int16", "int16_t" },
                 { "System.Int32", "int32_t" },
                 { "System.Int64", "int64_t" },
                 { "System.Double", "double" },

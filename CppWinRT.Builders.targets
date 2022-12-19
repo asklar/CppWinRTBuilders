@@ -12,11 +12,13 @@
     >
 
     <ItemGroup>
-      <!-- <_CppwinrtBuildersRefInputs Remove="@(_CppwinrtBuildersRefInputs)"/>
+      <_CppwinrtBuildersRefInputs Remove="@(_CppwinrtBuildersRefInputs)"/>
       <_CppwinrtBuildersRefInputs Include="@(CppWinRTDirectWinMDReferences)"/>
-      <_CppwinrtBuildersRefInputs Include="@(CppWinRTDynamicProjectWinMDReferences)"/> -->
+      <_CppwinrtBuildersRefInputs Include="@(CppWinRTDynamicProjectWinMDReferences)"/>
+      <_CppwinrtBuildersRefInputs Include="@(CppWinRTPlatformWinMDReferences)"/>
+
       <_CppwinrtBuildersRefRefs Remove="@(_CppwinrtBuildersRefRefs)"/>
-      <_CppwinrtBuildersRefRefs Include="@(CppWinRTPlatformWinMDReferences)"/>
+      <_CppwinrtBuildersRefRefs Include="@(_CppwinrtBuildersRefInputs)"/>
     </ItemGroup>
 
     <!-- <Error Text="_CppwinrtBuildersRefInputs = @(_CppwinrtBuildersRefRefs)" /> -->
