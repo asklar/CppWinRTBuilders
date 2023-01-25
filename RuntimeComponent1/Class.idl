@@ -1,0 +1,11 @@
+namespace RuntimeComponent1
+{
+    [default_interface]
+    runtimeclass Class
+    {
+        Class();
+        Int32 MyProperty;
+        Windows.Foundation.Collections.IVector<String> StringVector{ get; };
+        Windows.Foundation.Collections.IVector< Windows.Foundation.Collections.IMap<String, String> > StringMapVector{ get; };
+    }
+}
