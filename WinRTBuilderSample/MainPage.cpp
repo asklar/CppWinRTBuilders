@@ -76,18 +76,41 @@ Build(std::initializer_list<U> const& values) {
 
 namespace winrt::WinRTBuilderSample::implementation
 {
-
+  template<typename K, typename V>
+  auto f(std::initializer_list<std::initializer_list<std::pair<const K, V>>> v)
+  {
+    auto m = winrt::single_threaded_vector<winrt::Windows::Foundation::Collections::IMap<K, V>>({});
+    for (auto& e : v) {
+      m.Append(winrt::single_threaded_map<K, V>(std::unordered_map<K, V>(e)));
+    }
+    return m;
+  }
 
     MainPage::MainPage()
     {
         InitializeComponent();
 
+        f<hstring, hstring>({});
+        f<hstring, hstring>({
+          {{ }},
+          {{ }},
+          });
+
+        f<hstring, hstring>({
+          {{ L"a", L"b" }},
+          {{ L"c", L"d" }},
+          });
+
+
         auto c = winrt::RuntimeComponent1::builders::Class()
           .MyProperty(42)
           .StringVector({ L"foo", L"bar" })
-          .StringMapVector({ winrt::builders::make_map<hstring>({ {L"a", L"b"}}),
+          .StringMapVector({ 
             winrt::builders::make_map<hstring, hstring>({ {L"a", L"b"}}),
+            winrt::builders::make_map<hstring, hstring>({ {L"c", L"d"}}),
             })
+          .Add_IntEvent([](winrt::Windows::Foundation::IInspectable, int32_t){})
+          .Add_TypedEvent([](auto&, float){})
           ;
 
         // C++/WinRT object creation, property setters, and children
