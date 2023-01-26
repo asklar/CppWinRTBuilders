@@ -145,6 +145,22 @@ namespace CppWinRT.Builders
       return s;
     }
 
+    static IEnumerable<MrEvent> GetAllEvents(MrType type)
+    {
+      IEnumerable<MrEvent> s = type.GetEvents().ToList();
+      var baseType = type.GetBaseType();
+      if (baseType != null)
+      {
+        s = s.Concat(GetAllEvents(baseType));
+      }
+      return s;
+    }
+
+    static string GetCppEventHandlerType(MrEvent evt)
+    {
+      return GetCppTypeName(evt.GetEventType());
+    }
+
     private static Dictionary<MrType, bool> collectionProps = new();
     private const string IVector = "Windows.Foundation.Collections.IVector`1";
     private const string IMap = "Windows.Foundation.Collections.IMap`2";
@@ -255,11 +271,19 @@ namespace CppWinRT.Builders
       {
         return primitiveTypes[t.GetFullName()];
       }
+
+      if (t.GetFullName()[t.GetFullName().Length - 2] == '`')
+      {
+        var generic = t.GetFullName().Substring(0, t.GetFullName().Length - 2);
+        var genericCpp = $"winrt::{generic.Replace(".", "::")}";
+        var args = string.Join(", ", t.GetGenericArguments().Select(GetCppTypeName));
+        return $"{genericCpp}<{args}>";
+      }
       if (t.GetFullName().Equals(IMap, StringComparison.OrdinalIgnoreCase))
       {
         var k = GetCppTypeName(t.GetGenericArguments().First());
-                var v = GetCppTypeName(t.GetGenericArguments().Skip(1).First());
-                return $"winrt::Windows::Foundation::Collections::IMap<{k}, {v}>";
+        var v = GetCppTypeName(t.GetGenericArguments().Skip(1).First());
+        return $"winrt::Windows::Foundation::Collections::IMap<{k}, {v}>";
       }
       return $"winrt::{t.GetPrettyFullName().Replace(".", "::")}";
     }

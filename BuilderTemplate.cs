@@ -157,7 +157,7 @@ foreach (var csetter in collectionSetters) {
             this.Write("), of type ");
             
             #line 30 "F:\CppWinRTBuilders\BuilderTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(csetter.GetPropertyType().GetFullName()));
+            this.Write(this.ToStringHelper.ToStringWithCulture(csetter.GetPropertyType().GetPrettyFullName()));
             
             #line default
             #line hidden
@@ -168,7 +168,7 @@ foreach (var csetter in collectionSetters) {
             
             #line default
             #line hidden
-            this.Write(" ");
+            this.Write("& ");
             
             #line 31 "F:\CppWinRTBuilders\BuilderTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(csetter.GetName()));
@@ -220,6 +220,66 @@ foreach (var csetter in collectionSetters) {
             this.Write("    return *this;\r\n  }\r\n");
             
             #line 41 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+ }
+
+var events = GetAllEvents(_type);
+foreach (var evt in events) {
+
+            
+            #line default
+            #line hidden
+            this.Write("  // event adder: ");
+            
+            #line 46 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(evt.GetName()));
+            
+            #line default
+            #line hidden
+            this.Write(" (from ");
+            
+            #line 46 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(evt.DeclaringType.GetFullName()));
+            
+            #line default
+            #line hidden
+            this.Write("), of type ");
+            
+            #line 46 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(evt.GetEventType().GetPrettyFullName()));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n  const ");
+            
+            #line 47 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_type.GetName()));
+            
+            #line default
+            #line hidden
+            this.Write("& Add_");
+            
+            #line 47 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(evt.GetName()));
+            
+            #line default
+            #line hidden
+            this.Write("(");
+            
+            #line 47 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(GetCppEventHandlerType(evt)));
+            
+            #line default
+            #line hidden
+            this.Write(" const& handler) const {\r\n    super::");
+            
+            #line 48 "F:\CppWinRTBuilders\BuilderTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(evt.GetName()));
+            
+            #line default
+            #line hidden
+            this.Write("(winrt::auto_revoke, handler);\r\n    return *this;\r\n  }\r\n");
+            
+            #line 51 "F:\CppWinRTBuilders\BuilderTemplate.tt"
  } 
             
             #line default

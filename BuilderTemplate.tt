@@ -27,8 +27,8 @@ var collectionSetters = GetAllCollectionSetters(_type);
 foreach (var csetter in collectionSetters) {
 #>
   using super::<#= csetter.GetName() #>;
-  // collection setter: <#= csetter.GetName() #> (from <#= csetter.DeclaringType.GetFullName() #>), of type <#= csetter.GetPropertyType().GetFullName() #>
-  const <#= _type.GetName() #> <#= csetter.GetName() #>(std::initializer_list<<#= GetCppCollectionElementType(csetter.GetPropertyType()) #>> const& value) const {
+  // collection setter: <#= csetter.GetName() #> (from <#= csetter.DeclaringType.GetFullName() #>), of type <#= csetter.GetPropertyType().GetPrettyFullName() #>
+  const <#= _type.GetName() #>& <#= csetter.GetName() #>(std::initializer_list<<#= GetCppCollectionElementType(csetter.GetPropertyType()) #>> const& value) const {
     <# if (GetIVector(csetter.GetPropertyType()) != null) { #>
     super::<#= csetter.GetName() #>().ReplaceAll({ value.begin(), value.end() });
     <# } else { #>
@@ -36,6 +36,16 @@ foreach (var csetter in collectionSetters) {
       super::<#= csetter.GetName() #>().Insert(v.first, v.second);
     }
     <# } #>
+    return *this;
+  }
+<# }
+
+var events = GetAllEvents(_type);
+foreach (var evt in events) {
+#>
+  // event adder: <#= evt.GetName() #> (from <#= evt.DeclaringType.GetFullName() #>), of type <#= evt.GetEventType().GetPrettyFullName() #>
+  const <#= _type.GetName() #>& Add_<#= evt.GetName() #>(<#= GetCppEventHandlerType(evt) #> const& handler) const {
+    super::<#= evt.GetName() #>(winrt::auto_revoke, handler);
     return *this;
   }
 <# } #>
