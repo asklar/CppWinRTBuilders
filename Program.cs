@@ -164,14 +164,16 @@ namespace CppWinRT.Builders
     private static Dictionary<MrType, bool> collectionProps = new();
     private const string IVector = "Windows.Foundation.Collections.IVector`1";
     private const string IMap = "Windows.Foundation.Collections.IMap`2";
+    private const string IObservableVector = "Windows.Foundation.Collections.IObservableVector`1";
+
     //private const string IIterable = "Windows.Foundation.Collections.IIterable`1";
 
     private static bool IsCollectionProperty(MrProperty p)
     {
       var type = p.GetPropertyType();
       if (collectionProps.ContainsKey(type)) return collectionProps[type];
-      bool isIVector = GetIVector(type) != null;
-      var isIMap = GetIMap(type) != null;
+      bool isIVector = GetInterfaceFromType(type, IVector) != null;
+      var isIMap = GetInterfaceFromType(type, IMap) != null;
 
       // properties should never be array typed (T[]), since the projected array doesn't have a way to reflect changes to WinRT.
       if (isIVector || isIMap)
@@ -183,29 +185,51 @@ namespace CppWinRT.Builders
       return false;
     }
 
-    private static MrType? GetIMap(MrType type)
+    private static MrType? GetInterfaceFromType(MrType type, string interfaceName)
     {
-      return type.GetFullName().Equals(IMap, StringComparison.OrdinalIgnoreCase) ? type : type.GetInterfaces().FirstOrDefault(i => i.GetFullName() == IMap);
+      return type.GetFullName().Equals(interfaceName, StringComparison.OrdinalIgnoreCase) ? type : type.GetInterfaces().FirstOrDefault(i => i.GetFullName() == interfaceName);
     }
 
-    private static MrType? GetIVector(MrType type)
+    struct CollectionGeneric
     {
-      return type.GetFullName().Equals(IVector, StringComparison.OrdinalIgnoreCase) ? type : type.GetInterfaces().FirstOrDefault(i => i.GetFullName() == IVector);
+      public string Name { get; init; }
+      public int NArgs { get; init; }
+
+      public CollectionGeneric(string name, int nArgs)
+      {
+        Name = name;
+        NArgs = nArgs;
+      }
     }
 
     private static string GetCppCollectionElementType(MrType type)
     {
       var kind = collectionProps[type];
-      var ivector = GetIVector(type);
-      if (ivector != null)
-      {
-        return GetCppTypeName(ivector.GetGenericArguments().First());
-      }
 
-      var imap = GetIMap(type);
-      if (imap != null)
+
+      var collectionTypes = new CollectionGeneric[]
       {
-        return $"std::pair<{GetCppTypeName(imap.GetGenericArguments()[0])}, {GetCppTypeName(imap.GetGenericArguments()[1])}>";
+        new (IObservableVector, 1),
+        new (IVector, 1),
+        new (IMap, 2),
+      };
+
+      foreach (var e in collectionTypes)
+      {
+        var interface_ = GetInterfaceFromType(type, e.Name);
+        if (interface_ != null)
+        {
+          var args = interface_.GetGenericArguments().Select(GetCppTypeName);
+          switch (e.NArgs)
+          {
+            case 1:
+              return args.First();
+            case 2:
+              return $"std::pair<{string.Join(", ", args)}>";
+            default:
+              return $"std::tuple<{string.Join(", ", args)}>";
+          }
+        }
       }
 
       throw new Exception();
@@ -263,23 +287,24 @@ namespace CppWinRT.Builders
                 { "Windows.Foundation.Numerics.Vector4", "winrt::Windows::Foundation::Numerics::float4" },
             };
 
-      if (t.GetFullName() == "System.Nullable`1")
+      string fullname = t.GetFullName();
+      if (fullname == "System.Nullable`1")
       {
         return GetCppTypeName(t.GetGenericTypeParameters().First());
       }
-      if (primitiveTypes.ContainsKey(t.GetFullName()))
+      if (primitiveTypes.ContainsKey(fullname))
       {
-        return primitiveTypes[t.GetFullName()];
+        return primitiveTypes[fullname];
       }
 
-      if (t.GetFullName()[t.GetFullName().Length - 2] == '`')
+      if (fullname.Length > 2 && fullname[fullname.Length - 2] == '`')
       {
-        var generic = t.GetFullName().Substring(0, t.GetFullName().Length - 2);
+        var generic = fullname.Substring(0, fullname.Length - 2);
         var genericCpp = $"winrt::{generic.Replace(".", "::")}";
         var args = string.Join(", ", t.GetGenericArguments().Select(GetCppTypeName));
         return $"{genericCpp}<{args}>";
       }
-      if (t.GetFullName().Equals(IMap, StringComparison.OrdinalIgnoreCase))
+      if (fullname.Equals(IMap, StringComparison.OrdinalIgnoreCase))
       {
         var k = GetCppTypeName(t.GetGenericArguments().First());
         var v = GetCppTypeName(t.GetGenericArguments().Skip(1).First());

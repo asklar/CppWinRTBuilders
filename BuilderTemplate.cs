@@ -185,7 +185,7 @@ foreach (var csetter in collectionSetters) {
             this.Write("> const& value) const {\r\n    ");
             
             #line 32 "F:\CppWinRTBuilders\BuilderTemplate.tt"
- if (GetIVector(csetter.GetPropertyType()) != null) { 
+ if (GetInterfaceFromType(csetter.GetPropertyType(), IVector) != null) { 
             
             #line default
             #line hidden
