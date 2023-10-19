@@ -44,3 +44,15 @@ Collections (such as types that derive from `IVector<T>` and `IMap<T>`) can also
     .Padding(ThicknessHelper::FromUniformLength(8))
     .Orientation(Controls::Orientation::Horizontal);
 ``` 
+
+### Formatters
+The tool in this package also generates string formatters for enums.
+To use:
+```cpp
+#include <winrt/formatters/Windows.UI.Xaml.Visibility.h>
+
+// ...
+
+	auto visibility = Visibility::Collapsed;
+	std::wcout << visibility << std::endl; // prints "Collapsed"
+```
