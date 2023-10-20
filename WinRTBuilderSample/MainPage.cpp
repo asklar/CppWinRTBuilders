@@ -5,13 +5,13 @@
 #include <winrt/builders/Windows.UI.Xaml.Controls.StackPanel.h>
 #include <winrt/builders/Windows.UI.Xaml.Application.h>
 #include <winrt/builders/RuntimeComponent1.Class.h>
+#include <winrt/formatters/RuntimeComponent1.MyEnum.h>
 #include <winrt/builders/helpers.h>
-
+#include <iostream>
 #include <winrt/Windows.UI.Xaml.Media.h>
 #include <type_traits>
 using namespace winrt;
 using namespace Windows::UI::Xaml;
-
 
 template<typename R, typename T, typename... Args>
 struct FunctionTraitsBase {
@@ -37,7 +37,7 @@ template<typename T>
 using element_type_IVector_cvref = typename FunctionTraits<decltype(&T::Append)>::template NthArg<0>;
 
 template<typename T>
-using element_type_IVector = typename std::remove_cv_t<typename std::remove_reference_t<typename element_type_IVector_cvref<T>>>;
+using element_type_IVector = typename std::remove_cv_t<typename std::remove_reference_t<element_type_IVector_cvref<T>>>;
 
 template<typename T>
 using key_type_IMap_cvref = typename FunctionTraits<decltype(&T::Insert)>::template NthArg<0>;
@@ -46,10 +46,10 @@ template<typename T>
 using value_type_IMap_cvref = typename FunctionTraits<decltype(&T::Insert)>::template NthArg<1>;
 
 template<typename T>
-using key_type_IMap = typename std::remove_cv_t<typename std::remove_reference_t<typename key_type_IMap_cvref<T>>>;
+using key_type_IMap = typename std::remove_cv_t<typename std::remove_reference_t<key_type_IMap_cvref<T>>>;
 
 template<typename T>
-using value_type_IMap = typename std::remove_cv_t<typename std::remove_reference_t<typename value_type_IMap_cvref<T>>>;
+using value_type_IMap = typename std::remove_cv_t<typename std::remove_reference_t<value_type_IMap_cvref<T>>>;
 
 template<typename T>
 std::enable_if_t<std::is_assignable_v<winrt::Windows::Foundation::Collections::IMap<key_type_IMap<T>, value_type_IMap<T>>, T>, T> 
@@ -86,10 +86,13 @@ namespace winrt::WinRTBuilderSample::implementation
     return m;
   }
 
-    MainPage::MainPage()
-    {
-        InitializeComponent();
+  MainPage::MainPage()
+  {
+    InitializeComponent();
+  }
 
+  void test_f()
+  {
         f<hstring, hstring>({});
         f<hstring, hstring>({
           {{ }},
@@ -143,6 +146,15 @@ namespace winrt::WinRTBuilderSample::implementation
 
     void MainPage::ClickHandler(IInspectable const&, RoutedEventArgs const&)
     {
-        myButton().Content(box_value(L"Clicked"));
+      auto x = winrt::RuntimeComponent1::MyEnum::Foo;
+      auto f = std::formatter<winrt::RuntimeComponent1::MyEnum, wchar_t>{};
+      
+      auto xStr = std::vformat(L"{}", std::make_wformat_args(x));
+      auto yStr = std::format(L"{}", x);
+
+      constexpr auto cy = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(L"Foo");
+      auto y = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(xStr);
+      assert(x == y);
+      myButton().Content(box_value(xStr));
     }
 }

@@ -35,57 +35,128 @@ namespace CppWinRT.Builders
             
             #line default
             #line hidden
-            this.Write(".h>\r\n#include <winrt/formatters/helpers.h>\r\n\r\ntemplate<>\r\nconstexpr std::wstring_" +
-                    "view std::formatter<");
+            this.Write(".h>\r\n#include <winrt/formatters/helpers.h>\r\n\r\nnamespace winrt::formatters::impl\r\n" +
+                    "{\r\n  template<>\r\n  struct traits<");
             
-            #line 11 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            #line 13 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
             
             #line default
             #line hidden
-            this.Write(", wchar_t>::to_string(const ");
-            
-            #line 11 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
-            
-            #line default
-            #line hidden
-            this.Write("& value)\r\n{\r\n    switch (value)\r\n    {\r\n    ");
+            this.Write(">\r\n\t{\r\n\t\tusing value_type = ");
             
             #line 15 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
+            
+            #line default
+            #line hidden
+            this.Write(";\r\n\t\tstatic constexpr std::wstring_view name{ L\"");
+            
+            #line 16 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(_type.GetFullName()));
+            
+            #line default
+            #line hidden
+            this.Write("\" };\r\n\r\n    using tuple_t = std::pair<std::wstring_view, ");
+            
+            #line 18 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
+            
+            #line default
+            #line hidden
+            this.Write(">;\r\n    inline static constexpr std::array values\r\n\t\t{\r\n");
+            
+            #line 21 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
  foreach (var value in _type.GetFields()) { 
             
             #line default
             #line hidden
-            this.Write("    case ");
+            this.Write("      tuple_t { L\"");
             
-            #line 16 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            #line 22 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(value.GetName()));
+            
+            #line default
+            #line hidden
+            this.Write("\", ");
+            
+            #line 22 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
             
             #line default
             #line hidden
             this.Write("::");
             
-            #line 16 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            #line 22 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(value.GetName()));
             
             #line default
             #line hidden
-            this.Write(":\r\n            return L\"");
+            this.Write(" },\r\n");
             
-            #line 17 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(value.GetName()));
-            
-            #line default
-            #line hidden
-            this.Write("\";\r\n    ");
-            
-            #line 18 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            #line 23 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
  } 
             
             #line default
             #line hidden
-            this.Write("    default:\r\n            return L\"Unknown\";\r\n    }\r\n}");
+            this.Write("    };\r\n\t};\r\n}\r\n\r\ntemplate<>\r\nconstexpr std::wstring_view std::formatter<");
+            
+            #line 29 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
+            
+            #line default
+            #line hidden
+            this.Write(", wchar_t>::to_string(const ");
+            
+            #line 29 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
+            
+            #line default
+            #line hidden
+            this.Write(@"& value)
+{
+    using traits_t = winrt::formatters::impl::traits<winrt::RuntimeComponent1::MyEnum>;
+    const auto entry = std::find_if(traits_t::values.begin(), traits_t::values.end(), [&value](const traits_t::tuple_t& entry) { return entry.second == value; });
+    if (entry != traits_t::values.end())
+    {
+      return entry->first;
+    }
+    return L""Unknown"";
+}
+
+template<>
+constexpr ");
+            
+            #line 41 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
+            
+            #line default
+            #line hidden
+            this.Write(" std::formatter<");
+            
+            #line 41 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
+            
+            #line default
+            #line hidden
+            this.Write(", wchar_t>::from_string(std::wstring_view value, ");
+            
+            #line 41 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
+            
+            #line default
+            #line hidden
+            this.Write(@"&& default_value)
+{
+    using traits_t = winrt::formatters::impl::traits<winrt::RuntimeComponent1::MyEnum>;
+		const auto entry = std::find_if(traits_t::values.begin(), traits_t::values.end(), [&value](const traits_t::tuple_t& entry) { return entry.first == value; });
+		if (entry != traits_t::values.end())
+		{
+			return entry->second;
+		}
+		return default_value;
+}
+");
             return this.GenerationEnvironment.ToString();
         }
     }
