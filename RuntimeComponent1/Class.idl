@@ -1,5 +1,11 @@
 namespace RuntimeComponent1
 {
+  enum MyEnum
+  {
+    Foo = 0,
+    Bar,
+  };
+
     [default_interface]
     runtimeclass Class
     {
