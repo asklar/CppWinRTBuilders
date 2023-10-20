@@ -146,15 +146,24 @@ namespace winrt::WinRTBuilderSample::implementation
 
     void MainPage::ClickHandler(IInspectable const&, RoutedEventArgs const&)
     {
-      auto x = winrt::RuntimeComponent1::MyEnum::Foo;
-      auto f = std::formatter<winrt::RuntimeComponent1::MyEnum, wchar_t>{};
+      constexpr auto cFoo = winrt::RuntimeComponent1::MyEnum::Foo;
+      using formatter = std::formatter<winrt::RuntimeComponent1::MyEnum, wchar_t>;
       
-      auto xStr = std::vformat(L"{}", std::make_wformat_args(x));
-      auto yStr = std::format(L"{}", x);
+      auto strFoo = std::vformat(L"{}", std::make_wformat_args(cFoo));
+      auto strFoo2 = std::format(L"{}", cFoo);
 
-      constexpr auto cy = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(L"Foo");
-      auto y = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(xStr);
-      assert(x == y);
-      myButton().Content(box_value(xStr));
+      constexpr auto cStrFoo = formatter::to_string(cFoo);
+      
+      constexpr auto cParsedFoo = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(L"Foo");
+      constexpr auto cParsedFoo2 = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(cStrFoo);
+
+      static_assert(cFoo == cParsedFoo2);
+
+      auto y = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(strFoo);
+      
+      // winrt::from_string<winrt::RuntimeComponent1::MyEnum>(L"asodfji"); // must fail to compile
+
+      assert(cFoo == y);
+      myButton().Content(box_value(strFoo));
     }
 }

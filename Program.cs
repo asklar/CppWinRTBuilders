@@ -119,7 +119,7 @@ struct std::formatter<T, wchar_t> : ::std::formatter<std::wstring_view, wchar_t>
     }
 
     static constexpr std::wstring_view to_string(const T& value);
-    static constexpr T from_string(std::wstring_view value, T&& default_value = T{});
+    static constexpr T from_string(std::wstring_view value);
 };
 
 namespace winrt

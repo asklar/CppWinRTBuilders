@@ -139,14 +139,7 @@ constexpr ");
             
             #line default
             #line hidden
-            this.Write(", wchar_t>::from_string(std::wstring_view value, ");
-            
-            #line 41 "F:\CppWinRTBuilders\EnumFormattingTemplate.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(Helpers.GetCppTypeName(_type)));
-            
-            #line default
-            #line hidden
-            this.Write(@"&& default_value)
+            this.Write(@", wchar_t>::from_string(std::wstring_view value)
 {
     using traits_t = winrt::formatters::impl::traits<winrt::RuntimeComponent1::MyEnum>;
 		const auto entry = std::find_if(traits_t::values.begin(), traits_t::values.end(), [&value](const traits_t::tuple_t& entry) { return entry.first == value; });
@@ -154,7 +147,7 @@ constexpr ");
 		{
 			return entry->second;
 		}
-		return default_value;
+		throw winrt::hresult_invalid_argument{};
 }
 ");
             return this.GenerationEnvironment.ToString();
