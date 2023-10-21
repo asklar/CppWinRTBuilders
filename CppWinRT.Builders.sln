@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WinRTBuilderSample", "WinRT
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RuntimeComponent1", "RuntimeComponent1\RuntimeComponent1.vcxproj", "{C2107EF1-C8D3-463E-BF17-DDC6004990C2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppWinRT.DependencyInjection", "..\CppWinRT.DependencyInjection\CppWinRT.DependencyInjection.vcxproj", "{553A76CE-6ADF-4753-98AA-217CB4C56D55}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppWinRT.DependencyInjection", "CppWinRT.DependencyInjection\CppWinRT.DependencyInjection.vcxproj", "{553A76CE-6ADF-4753-98AA-217CB4C56D55}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
