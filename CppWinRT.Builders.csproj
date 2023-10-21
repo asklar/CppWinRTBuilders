@@ -18,8 +18,18 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>Generate builder-style helpers for C++/WinRT objects</Description>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Version>0.0.13</Version>
+    <Version>0.0.14</Version>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="DependencyInjection.h" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="DependencyInjection.h">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="BuilderTemplate.cs">
