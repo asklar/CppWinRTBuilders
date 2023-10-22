@@ -161,7 +161,7 @@ namespace winrt::WinRTBuilderSample::implementation
 
       auto y = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(strFoo);
       
-      // winrt::from_string<winrt::RuntimeComponent1::MyEnum>(L"asodfji"); // must fail to compile
+      // constexpr auto bad = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(L"asodfji"); // must fail to compile
 
       assert(cFoo == y);
       myButton().Content(box_value(strFoo));
