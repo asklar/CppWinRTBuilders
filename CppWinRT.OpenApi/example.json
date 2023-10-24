@@ -1,0 +1,343 @@
+{
+	"openapi": "3.0.3",
+	"info": {
+		"title": "Plugin Ingestion API",
+		"version": "0.1.0"
+	},
+	"servers": [
+		{
+			"url": "https://copilot-plugins-ingestion-int.microsoft.com",
+			"description": "INT environment"
+		},
+		{
+			"url": "https://copilot-plugins-ingestion.microsoft.com",
+			"description": "PROD environment"
+		}
+	],
+	"paths": {
+		"/api/v0.1/skills/{pluginId}/{version}": {
+			"put": {
+				"tags": [
+					"Plugin Ingestion"
+				],
+				"summary": "Ingest or Update a Plugin by ID and Version",
+				"description": "Ingest or Update a plugin by specifying its ID and version. Requires authentication with <microsoft_alias> and secret.\n",
+				"parameters": [
+					{
+						"name": "pluginId",
+						"in": "path",
+						"description": "The ID of the plugin.",
+						"required": "true",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "version",
+						"in": "path",
+						"description": "The version of the plugin.",
+						"required": "true",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"required": "true",
+					"content": {
+						"multipart/form-data": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"manifest": {
+										"type": "string"
+									},
+									"category": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Successful update",
+						"content": {
+							"application/json": {
+								"example": {
+									"plugin": {
+										"plugin_id": "Microsoft.GamingApp_8wekyb3d8bbwe!App",
+										"catalog_id": "WindowsPluginStore",
+										"plugin_name": "Contoso Test",
+										"name_for_human": "Contoso Test",
+										"description_for_model": "Plugin to set windows to dark mode",
+										"description_for_human": "Plugin to set windows to dark mode",
+										"category": "Productivity",
+										"manifest_string": "{...}",
+										"logo_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"bing_image_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"version": "0.0.4"
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized"
+					}
+				}
+			},
+			"get": {
+				"tags": [
+					"Plugin Ingestion"
+				],
+				"summary": "Get Ingested or Updated Plugin by ID and Version",
+				"description": "Get Ingested or Updated plugin by specifying its ID and version. Requires authentication with <microsoft_alias> and secret.\n",
+				"parameters": [
+					{
+						"name": "pluginId",
+						"in": "path",
+						"description": "The ID of the plugin.",
+						"required": "true",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "version",
+						"in": "path",
+						"description": "The version of the plugin.",
+						"required": "true",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successful Get",
+						"content": {
+							"application/json": {
+								"example": {
+									"plugin": {
+										"plugin_id": "Microsoft.GamingApp_8wekyb3d8bbwe!App",
+										"catalog_id": "WindowsPluginStore",
+										"plugin_name": "Contoso Test",
+										"name_for_human": "Contoso Test",
+										"description_for_model": "Plugin to set windows to dark mode",
+										"description_for_human": "Plugin to set windows to dark mode",
+										"category": "Productivity",
+										"manifest_string": "{...}",
+										"logo_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"bing_image_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"version": "0.0.4"
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized"
+					}
+				}
+			}
+		},
+		"/api/v0.1/sideloadedplugin": {
+			"put": {
+				"tags": [
+					"Sideload Plugin Ingestion"
+				],
+				"summary": "Sideload Plugins",
+				"description": "Ingest Sideload plugins. Requires no authentication.\n",
+				"requestBody": {
+					"required": "true",
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"manifest": {
+										"type": "string"
+									},
+									"pluginId": {
+										"type": "string"
+									},
+									"pluginUserKey": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Successful sideload",
+						"content": {
+							"application/json": {
+								"example": {
+									"plugin": {
+										"plugin_id": "Microsoft.GamingApp_8wekyb3d8bbwe!App",
+										"catalog_id": "WindowsPluginStore",
+										"plugin_name": "Contoso Test",
+										"name_for_human": "Contoso Test",
+										"description_for_model": "Plugin to set windows to dark mode",
+										"description_for_human": "Plugin to set windows to dark mode",
+										"category": "Productivity",
+										"manifest_string": "{...}",
+										"logo_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"bing_image_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"version": "0.0.4"
+									},
+									"expirationTime": "1697642390"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v0.1/sideloadedplugin/{pluginId}": {
+			"get": {
+				"tags": [
+					"Sideload Plugin Ingestion"
+				],
+				"summary": "Sideload Plugins",
+				"description": "Ingest Sideload plugins. Requires no authentication.\n",
+				"parameters": [
+					{
+						"name": "pluginId",
+						"in": "path",
+						"description": "The ID of the plugin.",
+						"required": "true",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "pluginUserKey",
+						"in": "header",
+						"description": "The pluginUserKey for the sideloaded plugin.",
+						"required": "true",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Successfully get sideloaded plugin",
+						"content": {
+							"application/json": {
+								"example": {
+									"plugin": {
+										"plugin_id": "Microsoft.GamingApp_8wekyb3d8bbwe!App",
+										"catalog_id": "WindowsPluginStore",
+										"plugin_name": "Contoso Test",
+										"name_for_human": "Contoso Test",
+										"description_for_model": "Plugin to set windows to dark mode",
+										"description_for_human": "Plugin to set windows to dark mode",
+										"category": "Productivity",
+										"manifest_string": "{...}",
+										"logo_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"bing_image_url": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207",
+										"version": "0.0.4"
+									},
+									"expirationTime": "1697642390"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"MicrosoftAlias": {
+				"type": "apiKey",
+				"in": "header",
+				"name": "Authorization"
+			},
+			"MSA": {
+				"type": "apiKey",
+				"in": "header",
+				"name": "Authorization"
+			}
+		},
+		"schemas": {
+			"PluginResponse": {
+				"type": "object",
+				"properties": {
+					"plugin": {
+						"$ref": "#/components/schemas/Plugin"
+					}
+				}
+			},
+			"SideloadedPluginResponse": {
+				"type": "object",
+				"properties": {
+					"plugin": {
+						"$ref": "#/components/schemas/Plugin"
+					},
+					"expirationTimestampInSeconds": {
+						"type": "integer",
+						"example": "1697642390"
+					}
+				}
+			},
+			"Plugin": {
+				"type": "object",
+				"properties": {
+					"plugin_id": {
+						"type": "string",
+						"example": "Microsoft.GamingApp_8wekyb3d8bbwe!App"
+					},
+					"catalog_id": {
+						"type": "string",
+						"example": "WindowsPluginStore"
+					},
+					"plugin_name": {
+						"type": "string",
+						"example": "Contoso Test"
+					},
+					"name_for_human": {
+						"type": "string",
+						"example": "Contoso Test"
+					},
+					"description_for_model": {
+						"type": "string",
+						"example": "Plugin to set Windows to dark mode"
+					},
+					"description_for_human": {
+						"type": "string",
+						"example": "Plugin to set Windows to dark mode"
+					},
+					"category": {
+						"type": "string",
+						"example": "Productivity"
+					},
+					"manifest_string": {
+						"type": "string",
+						"example": "{...}"
+					},
+					"logo_url": {
+						"type": "string",
+						"format": "uri",
+						"example": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207"
+					},
+					"bing_image_url": {
+						"type": "string",
+						"format": "uri",
+						"example": "https://store-images.s-microsoft.com/image/apps.34008.13510798887403545.97c7a116-09ee-49f0-a2ba-29354dba471d.a680d80e-07a6-44aa-9e82-1b4314493956?w=207"
+					},
+					"version": {
+						"type": "string",
+						"example": "0.0.4"
+					}
+				}
+			}
+		}
+	}
+}
