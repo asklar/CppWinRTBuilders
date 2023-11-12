@@ -9,12 +9,23 @@
 #include <winrt/Windows.Foundation.h>
 
 <# foreach (var newType in types.Where(x => !x.Value.IsBuiltIn)) { #>
+namespace winrt::OpenApiResponse
+{
 struct <#= newType.Value.CppWinRTName #>
-{<# foreach (var property in newType.Value.Members) { #>
-
+{
+<# foreach (var property in newType.Value.Members) { #>
   <#= LookupType(property.Schema.JsonName).CppWinRTName #> <#= property.Name #>{};
-<# } #>};
 <# } #>
+  <#= newType.Value.CppWinRTName #>(const winrt::Windows::Data::Json::JsonObject& json)
+  {
+<# foreach (var property in newType.Value.Members) { #>
+    <#= property.Name #> = json.<#= JsonObjectMethod(property) #>(<#= property.Name #>);
+<# } #>
+  }
+};
+
+<# } #>
+}
 
 <# foreach (var path in Paths) { #>
 // <#= path.PathUriTemplate #>
@@ -24,18 +35,20 @@ struct <#= newType.Value.CppWinRTName #>
   // implementation
   auto path = std::vformat(<#= ConstructPath(path) #>);
   winrt::Windows::Data::Json::JsonObject jsonBody;
-  <# if (path.RequestBody != null) { #>
+<# if (path.RequestBody != null) { #>
   <#   foreach (var property in path.RequestBody.Properties) { #>auto jsonValue_<#= property.Name #> = winrt::Windows::Data::Json::JsonValue::<#= CreateValueMethodName(property) #>(<#= property.Name #>);
   jsonBody.Insert(L"<#= property.Name #>", jsonValue_<#= property.Name #>);
-  <#   } #>
-  <# } #>auto jsonPayload = jsonBody.Stringify();
+<#   } 
+  } #>
+  auto jsonPayload = jsonBody.Stringify();
 
   auto request = winrt::Windows::Web::Http::HttpRequestMessage(winrt::Windows::Web::Http::HttpMethod::<#= path.Method #>(), winrt::Windows::Foundation::Uri(path));
   request.Content(winrt::Windows::Web::Http::HttpStringContent(jsonPayload, winrt::Windows::Storage::Streams::UnicodeEncoding::Utf8, L"application/json"));
   auto response = co_await client.SendRequestAsync(request);
   auto responseContent = co_await response.Content().ReadAsStringAsync();
   auto responseJson = winrt::Windows::Data::Json::JsonObject::Parse(responseContent);
-  // ...
+  // parse the json as <#= path.ResponseType.CppWinRTName #>
+  return winrt::OpenApiResponse::<#= path.ResponseType.CppWinRTName #>{responseJson};
 }
 
 <# } #>

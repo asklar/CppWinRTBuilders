@@ -93,13 +93,13 @@ foreach (var path in paths)
       {
         var type = schema["type"]!.ToString()!;
         var responseType = generator.LookupType(type);
-        pathObject.ResponseType.Add(responseType);
+        pathObject.ResponseType = responseType;
       } else if (mimeType.Value != null)
       {
         var example = mimeType.Value!["example"]!.AsObject();
         var typeDef = example.First().Value.AsObject();
         var typeName = example.First().Key;
-        pathObject.ResponseType.Add(generator.CreateType(pathObject.Name, typeName, typeDef));
+        pathObject.ResponseType = generator.CreateType(pathObject.Name, typeName, typeDef);
       }
     }
     generator.Paths.Add(pathObject);
@@ -118,9 +118,16 @@ namespace CppWinRT.OpenApi
   public class CppWinRTType
   {
     public string JsonName { get; set; }
-    public string CppWinRTName { get; set; }
+    public string CppWinRTFullName
+    {
+      get =>
+        IsBuiltIn ? CppWinRTName : $"winrt::{Namespace}::{CppWinRTName}";
+    }
     public bool IsBuiltIn { get; set; }
     public List<Parameter> Members { get; set; } = new();
+    public string Namespace { get; internal set; }
+
+    public string CppWinRTName { get; set; }
   }
 
   public class Parameter
@@ -158,7 +165,7 @@ namespace CppWinRT.OpenApi
 
     public Request RequestBody;
 
-    public List<CppWinRTType> ResponseType = new();
+    public CppWinRTType ResponseType = new();
   }
   public partial class CppWinRTGenerator
   {
@@ -174,7 +181,7 @@ namespace CppWinRT.OpenApi
       //     { "string", new CppWinRTType{ JsonName = "string", CppWinRTName = "winrt::hstring", IsBuiltIn = true } },
     };
 
-    public string GetCppWinRTTypeName(string name)
+    public string GetBuiltInCppWinRTTypeName(string name)
     {
       switch (name)
       {
@@ -189,7 +196,7 @@ namespace CppWinRT.OpenApi
     public CppWinRTType LookupType(string typeName)
     {
       if (types.ContainsKey(typeName)) return types[typeName];
-      var cppwinrtType = GetCppWinRTTypeName(typeName);
+      var cppwinrtType = GetBuiltInCppWinRTTypeName(typeName);
       if (cppwinrtType != string.Empty)
       {
         var type = new CppWinRTType
@@ -208,10 +215,10 @@ namespace CppWinRT.OpenApi
     public string GetCppWinRTParameters(Path path)
     {
       StringBuilder sb = new();
-      var paramDefs = path.Parameters.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTName} {p.Name}");
+      var paramDefs = path.Parameters.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
       if (path.RequestBody != null)
       {
-        var bodyParams = path.RequestBody.Properties.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTName} {p.Name}");
+        var bodyParams = path.RequestBody.Properties.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
         paramDefs = paramDefs.Concat(bodyParams);
       }
 
@@ -229,20 +236,33 @@ namespace CppWinRT.OpenApi
       var pathTemplate = regex.Replace(template, "{}");
       return $"LR\"({ServerUri}{pathTemplate})\", {string.Join(", ", pathVariables)}";
     }
+    struct GetSetName
+    {
+      public string Get { get; set; }
+      public string Set { get; set; }
+    }
 
+    Dictionary<string, GetSetName> ValueMethodNames = new()
+    {
+      { "string", new GetSetName{ Get = "GetNamedString", Set = "CreateStringValue" } },
+      { "integer", new GetSetName { Get = "GetNamedNumber", Set = "CreateNumberValue" } },
+      { "number", new GetSetName { Get = "GetNamedNumber", Set = "CreateNumberValue" } },
+      { "boolean", new GetSetName { Get = "GetNamedBoolean", Set = "CreateBooleanValue" } },
+    };
     public string CreateValueMethodName(Parameter p)
     {
       var cppwinrtType = p.Schema.JsonName;
-      switch (cppwinrtType)
-      {
-        case "string": return "CreateStringValue";
-        case "number": return "CreateNumberValue";
-        case "integer": return "CreateNumberValue";
-        case "boolean": return "CreateBooleanValue";
-
-        default: return string.Empty;
-      }
+      if (ValueMethodNames.ContainsKey(cppwinrtType)) return ValueMethodNames[cppwinrtType].Set;
+      else return string.Empty;
     }
+
+    public string JsonObjectMethod(Parameter property)
+    {
+      var cppwinrtType = property.Schema.JsonName;
+      if (ValueMethodNames.ContainsKey(cppwinrtType)) return ValueMethodNames[cppwinrtType].Get;
+      else return string.Empty;
+    }
+
 
     public string ConstructJsonRequestPayload(Path path)
     {
@@ -259,8 +279,9 @@ namespace CppWinRT.OpenApi
       var type = new CppWinRTType
       {
         JsonName = typeName,
-        CppWinRTName = $"winrt::{pathName}_{typeName}",
-        IsBuiltIn = false
+        CppWinRTName = typeName,
+        IsBuiltIn = false,
+        Namespace = pathName,
       };
       type.Members.AddRange(typeDef.Select(p => new Parameter
       {
