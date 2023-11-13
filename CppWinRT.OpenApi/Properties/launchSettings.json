@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CppWinRT.OpenApi": {
+      "commandName": "Project",
+      "commandLineArgs": "-in:F:\\CppWinRTBuilders\\CppWinRT.OpenApi\\example.json -o:\"F:\\CppWinRTBuilders\\WinRTBuilderSample\\Generated Files\""
+    }
+  }
+}

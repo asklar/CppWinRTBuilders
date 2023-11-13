@@ -10,9 +10,14 @@
 #include <iostream>
 #include <winrt/Windows.UI.Xaml.Media.h>
 #include <type_traits>
+#include <winrt/openapi/PluginIngestionAPI.h>
+#include <winrt/Windows.Data.Json.h>
+
 using namespace winrt;
 using namespace Windows::UI::Xaml;
-
+using namespace Windows::Web::Http;
+using namespace Windows::Data::Json;
+using namespace Windows::Storage::Streams;
 template<typename R, typename T, typename... Args>
 struct FunctionTraitsBase {
   using RetType = R;
@@ -144,7 +149,7 @@ namespace winrt::WinRTBuilderSample::implementation
         throw hresult_not_implemented();
     }
 
-    void MainPage::ClickHandler(IInspectable const&, RoutedEventArgs const&)
+    winrt::fire_and_forget MainPage::ClickHandler(IInspectable const&, RoutedEventArgs const&)
     {
       constexpr auto cFoo = winrt::RuntimeComponent1::MyEnum::Foo;
       using formatter = std::formatter<winrt::RuntimeComponent1::MyEnum, wchar_t>;
@@ -165,5 +170,59 @@ namespace winrt::WinRTBuilderSample::implementation
 
       assert(cFoo == y);
       myButton().Content(box_value(strFoo));
+
+      struct FakeHttpClient {
+        HttpStatusCode ResponseStatusCode{};
+        wil::com_task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage const&) {
+          auto response = HttpResponseMessage(ResponseStatusCode);
+          auto mockPlugin = winrt::OpenApi::Plugin();
+          /*
+            winrt::hstring plugin_id{};
+  winrt::hstring catalog_id{};
+  winrt::hstring plugin_name{};
+  winrt::hstring name_for_human{};
+  winrt::hstring description_for_model{};
+  winrt::hstring description_for_human{};
+  winrt::hstring category{};
+  winrt::hstring manifest_string{};
+  winrt::hstring logo_url{};
+  winrt::hstring bing_image_url{};
+  winrt::hstring version{};
+*/
+          mockPlugin.plugin_id = L"plugin_id";
+          mockPlugin.catalog_id = L"catalog_id";
+          mockPlugin.plugin_name = L"plugin_name";
+          mockPlugin.name_for_human = L"name_for_human";
+          mockPlugin.description_for_model = L"description_for_model";
+          mockPlugin.description_for_human = L"description_for_human";
+          mockPlugin.category = L"category";
+          mockPlugin.manifest_string = L"manifest_string";
+          mockPlugin.logo_url = L"logo_url";
+          mockPlugin.bing_image_url = L"bing_image_url";
+          mockPlugin.version = L"version";
+          auto mockJsonResponse = mockPlugin.ToJsonValue();
+          auto mockJsonResponseString = mockJsonResponse.Stringify();
+          response.Content(HttpStringContent(mockJsonResponseString, UnicodeEncoding::Utf8, L"application/json"));
+
+          co_return response;
+				}
+      };
+      auto fakeClient = FakeHttpClient{};
+      fakeClient.ResponseStatusCode = HttpStatusCode::Ok;
+      auto plugin = co_await winrt::OpenApi::SkillsAsync(fakeClient, L"pluginId", L"version");
+      auto plugin_id = plugin.plugin_id;
+      assert(plugin_id == L"plugin_id");
+      fakeClient.ResponseStatusCode = HttpStatusCode::InternalServerError;
+      try {
+				auto plugin2 = co_await winrt::OpenApi::SkillsAsync(fakeClient, L"pluginId", L"version");
+				assert(false);
+			}
+      catch (winrt::hresult_error const& e) {
+				assert(e.code() == HTTP_E_STATUS_SERVER_ERROR);
+			}
+      catch (...) {
+				assert(false);
+			}
+
     }
 }

@@ -11,7 +11,7 @@ namespace winrt::WinRTBuilderSample::implementation
         int32_t MyProperty();
         void MyProperty(int32_t value);
 
-        void ClickHandler(Windows::Foundation::IInspectable const& sender, Windows::UI::Xaml::RoutedEventArgs const& args);
+        winrt::fire_and_forget ClickHandler(Windows::Foundation::IInspectable const& sender, Windows::UI::Xaml::RoutedEventArgs const& args);
     };
 }
 
