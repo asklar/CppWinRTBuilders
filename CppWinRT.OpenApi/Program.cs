@@ -168,10 +168,22 @@ foreach (var path in paths)
       }
       else if (mimeType.Value != null)
       {
-        var example = mimeType.Value!["example"]!.AsObject();
-        var typeDef = example.First().Value.AsObject();
-        var typeName = example.First().Key;
-        pathObject.ResponseType = generator.CreateType("winrt::OpenApi", typeName, typeDef);
+        if (mimeType.Value.AsObject().ContainsKey("$ref"))
+        {
+          // TODO: deal with references to schema instead of example
+          var refType = mimeType.Value!["$ref"]!.ToString()!;
+          var typeName = refType.Split('/').Last();
+          var typeDef = json["components"]!["schemas"]![typeName]!.AsObject();
+          pathObject.ResponseType = generator.CreateType("winrt::OpenApi", typeName, typeDef);
+        }
+        else if (mimeType.Value.AsObject().ContainsKey("example"))
+        {
+          var example = mimeType.Value!["example"]!.AsObject();
+          if (example.Count() != 1) throw new Exception("Only one example is supported");
+          var typeDef = example.First().Value!.AsObject();
+          var typeName = example.First().Key;
+          pathObject.ResponseType = generator.CreateType("winrt::OpenApi", typeName, typeDef);
+        }
       }
     }
     generator.Paths.Add(pathObject);
