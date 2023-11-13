@@ -5,15 +5,37 @@ using System.Text.RegularExpressions;
 
 var outFolder = string.Empty;
 var openApiPath = string.Empty;
+var preferredServer = string.Empty;
+
 foreach (var arg in args)
 {
   if (arg.StartsWith("-o:"))
   {
     outFolder = arg.Substring(3);
   }
+  else if (arg.StartsWith("-out:"))
+  {
+    outFolder = arg.Substring(5);
+  }
+  else if (arg.StartsWith("-i:"))
+  {
+    openApiPath = arg.Substring(3);
+  }
   else if (arg.StartsWith("-in:"))
   {
     openApiPath = arg.Substring(4);
+  }
+  else if (arg.StartsWith("-s:"))
+  {
+    preferredServer = arg.Substring(3);
+  }
+  else if (arg.StartsWith("-server:"))
+  {
+    preferredServer = arg.Substring(8);
+  }
+  else
+  {
+    throw new ArgumentException($"Unknown argument {arg}");
   }
 }
 
@@ -64,7 +86,17 @@ foreach (var server in servers)
   generator.Servers.Add(description, url);
 }
 
-generator.ServerUri = generator.Servers.First().Value;
+if (preferredServer != string.Empty)
+{
+  generator.ServerUri = generator.Servers[preferredServer];
+}
+else
+{
+  var server = generator.Servers.First();
+  Console.WriteLine($"Using default server: {server.Key} ({server.Value})");
+  Console.WriteLine("Use -s: or -server: to specify a different server");
+  generator.ServerUri = server.Value;
+}
 
 var paths = json["paths"]!.AsObject();
 foreach (var path in paths)
