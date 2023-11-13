@@ -173,22 +173,18 @@ namespace winrt::WinRTBuilderSample::implementation
 
       struct FakeHttpClient {
         HttpStatusCode ResponseStatusCode{};
-        wil::com_task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage const&) {
+        winrt::OpenApi::ServerEnvironment Environment{};
+        wil::com_task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage const& msg) {
           auto response = HttpResponseMessage(ResponseStatusCode);
+          const auto uri = msg.RequestUri().AbsoluteUri();
+          const auto config = std::find_if(winrt::OpenApi::ServerConfigList.begin(),
+            winrt::OpenApi::ServerConfigList.end(),
+            [env = this->Environment](auto&& c) { return c.environment == env; });
+          if (!uri.starts_with(config->uri))
+          {
+            throw winrt::hresult_invalid_argument(L"Invalid URI");
+          }
           auto mockPlugin = winrt::OpenApi::Plugin();
-          /*
-            winrt::hstring plugin_id{};
-  winrt::hstring catalog_id{};
-  winrt::hstring plugin_name{};
-  winrt::hstring name_for_human{};
-  winrt::hstring description_for_model{};
-  winrt::hstring description_for_human{};
-  winrt::hstring category{};
-  winrt::hstring manifest_string{};
-  winrt::hstring logo_url{};
-  winrt::hstring bing_image_url{};
-  winrt::hstring version{};
-*/
           mockPlugin.plugin_id = L"plugin_id";
           mockPlugin.catalog_id = L"catalog_id";
           mockPlugin.plugin_name = L"plugin_name";
@@ -207,11 +203,27 @@ namespace winrt::WinRTBuilderSample::implementation
           co_return response;
 				}
       };
+      
       auto fakeClient = FakeHttpClient{};
       fakeClient.ResponseStatusCode = HttpStatusCode::Ok;
       auto plugin = co_await winrt::OpenApi::SkillsAsync(fakeClient, L"pluginId", L"version");
       auto plugin_id = plugin.plugin_id;
       assert(plugin_id == L"plugin_id");
+
+      fakeClient.Environment = winrt::OpenApi::ServerEnvironment::PROD_environment;
+      plugin = co_await winrt::OpenApi::SkillsAsync<decltype(fakeClient), winrt::OpenApi::ServerEnvironment::PROD_environment>(fakeClient, L"pluginId", L"version");
+
+      try {
+        plugin = co_await winrt::OpenApi::SkillsAsync(fakeClient, L"pluginId", L"version");
+      }
+      catch (winrt::hresult_invalid_argument const& e) {
+				assert(e.code() == E_INVALIDARG);
+      }
+      catch (...) {
+				assert(false);
+			}
+
+      fakeClient.Environment = winrt::OpenApi::ServerEnvironment::Default;
       fakeClient.ResponseStatusCode = HttpStatusCode::InternalServerError;
       try {
 				auto plugin2 = co_await winrt::OpenApi::SkillsAsync(fakeClient, L"pluginId", L"version");

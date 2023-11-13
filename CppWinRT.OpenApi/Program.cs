@@ -95,6 +95,7 @@ else
   var server = generator.Servers.First();
   Console.WriteLine($"Using default server: {server.Key} ({server.Value})");
   Console.WriteLine("Use -s: or -server: to specify a different server");
+  generator.ServerDescription = server.Key;
   generator.ServerUri = server.Value;
 }
 
@@ -284,6 +285,7 @@ namespace CppWinRT.OpenApi
     public string Version { get; set; }
 
     public List<Path> Paths = new();
+    public string ServerDescription { get; set; }
     public string ServerUri { get; set; }
     public Dictionary<string, string> Servers = new();
 
@@ -346,7 +348,7 @@ namespace CppWinRT.OpenApi
       var pathVariables = regex.Matches(template).Select(m => m.Value[1..^1]);
       var pathTemplate = regex.Replace(template, "{}");
       var comma = pathVariables.Count() > 0 ? ", " : string.Empty;
-      return $"LR\"({ServerUri}{pathTemplate})\"{comma}{string.Join(", ", pathVariables)}";
+      return $"LR\"({{}}{pathTemplate})\", serverUri{comma}{string.Join(", ", pathVariables)}";
     }
     struct GetSetName
     {
