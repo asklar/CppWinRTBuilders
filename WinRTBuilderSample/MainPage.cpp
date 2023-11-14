@@ -11,6 +11,7 @@
 #include <winrt/Windows.UI.Xaml.Media.h>
 #include <type_traits>
 #include <winrt/openapi/PluginIngestionAPI.h>
+#include <winrt/openapi/SwaggerPetstore-OpenAPI3.0.h>
 #include <winrt/Windows.Data.Json.h>
 
 using namespace winrt;
@@ -171,77 +172,80 @@ namespace winrt::WinRTBuilderSample::implementation
       assert(cFoo == y);
       myButton().Content(box_value(strFoo));
 
-      using namespace winrt::OpenApi;
-      struct FakeHttpClient {
-        HttpStatusCode ResponseStatusCode{};
-        ServerEnvironment Environment{};
-        wil::com_task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage const& msg) {
-          auto response = HttpResponseMessage(ResponseStatusCode);
-          const auto uri = msg.RequestUri().AbsoluteUri();
-          const auto config = std::find_if(ServerConfigList.begin(),
-            ServerConfigList.end(),
-            [env = this->Environment](auto&& c) { return c.environment == env; });
-          if (!uri.starts_with(config->uri))
-          {
-            throw winrt::hresult_invalid_argument(L"Invalid URI");
+      {
+        using namespace winrt::OpenApi;
+        struct FakeHttpClient {
+          HttpStatusCode ResponseStatusCode{};
+          ServerEnvironment Environment{};
+          wil::com_task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage const& msg) {
+            auto response = HttpResponseMessage(ResponseStatusCode);
+            const auto uri = msg.RequestUri().AbsoluteUri();
+            const auto config = std::find_if(ServerConfigList.begin(),
+              ServerConfigList.end(),
+              [env = this->Environment](auto&& c) { return c.environment == env; });
+            if (!uri.starts_with(config->uri))
+            {
+              throw winrt::hresult_invalid_argument(L"Invalid URI");
+            }
+            auto mockPlugin = Plugin();
+            mockPlugin.plugin_id = L"plugin_id";
+            mockPlugin.catalog_id = L"catalog_id";
+            mockPlugin.plugin_name = L"plugin_name";
+            mockPlugin.name_for_human = L"name_for_human";
+            mockPlugin.description_for_model = L"description_for_model";
+            mockPlugin.description_for_human = L"description_for_human";
+            mockPlugin.category = L"category";
+            mockPlugin.manifest_string = L"manifest_string";
+            mockPlugin.logo_url = L"logo_url";
+            mockPlugin.bing_image_url = L"bing_image_url";
+            mockPlugin.version = L"version";
+            auto mockJsonResponse = mockPlugin.ToJsonValue();
+            auto mockJsonResponseString = mockJsonResponse.Stringify();
+            response.Content(HttpStringContent(mockJsonResponseString, UnicodeEncoding::Utf8, L"application/json"));
+
+            co_return response;
           }
-          auto mockPlugin = Plugin();
-          mockPlugin.plugin_id = L"plugin_id";
-          mockPlugin.catalog_id = L"catalog_id";
-          mockPlugin.plugin_name = L"plugin_name";
-          mockPlugin.name_for_human = L"name_for_human";
-          mockPlugin.description_for_model = L"description_for_model";
-          mockPlugin.description_for_human = L"description_for_human";
-          mockPlugin.category = L"category";
-          mockPlugin.manifest_string = L"manifest_string";
-          mockPlugin.logo_url = L"logo_url";
-          mockPlugin.bing_image_url = L"bing_image_url";
-          mockPlugin.version = L"version";
-          auto mockJsonResponse = mockPlugin.ToJsonValue();
-          auto mockJsonResponseString = mockJsonResponse.Stringify();
-          response.Content(HttpStringContent(mockJsonResponseString, UnicodeEncoding::Utf8, L"application/json"));
+        };
 
-          co_return response;
-				}
-      };
+        // custom http client
+        static_assert(std::is_same_v<wil::com_task<Plugin>, decltype(SkillsAsync(std::declval<FakeHttpClient>(), L"pluginId", L"version"))>);
+        // custom http client and server environment
+        static_assert(std::is_same_v<wil::com_task<Plugin>, decltype(SkillsAsync<FakeHttpClient, ServerEnvironment::PROD_environment>(std::declval<FakeHttpClient>(), L"pluginId", L"version"))>);
+        // stock http client, custom server environment
+        static_assert(std::is_same_v<wil::com_task<Plugin>, decltype(SkillsAsync<ServerEnvironment::PROD_environment>(L"pluginId", L"version"))>);
+        auto fakeClient = FakeHttpClient{};
+        fakeClient.ResponseStatusCode = HttpStatusCode::Ok;
+        auto plugin = co_await SkillsAsync(fakeClient, L"pluginId", L"version");
+        auto plugin_id = plugin.plugin_id;
+        assert(plugin_id == L"plugin_id");
 
-      // custom http client
-      static_assert(std::is_same_v<wil::com_task<Plugin>, decltype(SkillsAsync(std::declval<FakeHttpClient>(), L"pluginId", L"version"))>);
-      // custom http client and server environment
-      static_assert(std::is_same_v<wil::com_task<Plugin>, decltype(SkillsAsync<FakeHttpClient, ServerEnvironment::PROD_environment>(std::declval<FakeHttpClient>(), L"pluginId", L"version"))>);
-      // stock http client, custom server environment
-      static_assert(std::is_same_v<wil::com_task<Plugin>, decltype(SkillsAsync<ServerEnvironment::PROD_environment>(L"pluginId", L"version"))>);
-      auto fakeClient = FakeHttpClient{};
-      fakeClient.ResponseStatusCode = HttpStatusCode::Ok;
-      auto plugin = co_await SkillsAsync(fakeClient, L"pluginId", L"version");
-      auto plugin_id = plugin.plugin_id;
-      assert(plugin_id == L"plugin_id");
+        fakeClient.Environment = ServerEnvironment::PROD_environment;
+        plugin = co_await SkillsAsync<decltype(fakeClient), ServerEnvironment::PROD_environment>(fakeClient, L"pluginId", L"version");
 
-      fakeClient.Environment = ServerEnvironment::PROD_environment;
-      plugin = co_await SkillsAsync<decltype(fakeClient), ServerEnvironment::PROD_environment>(fakeClient, L"pluginId", L"version");
+        try {
+          plugin = co_await SkillsAsync(fakeClient, L"pluginId", L"version");
+        }
+        catch (winrt::hresult_invalid_argument const& e) {
+          assert(e.code() == E_INVALIDARG);
+        }
+        catch (...) {
+          assert(false);
+        }
 
-      try {
-        plugin = co_await SkillsAsync(fakeClient, L"pluginId", L"version");
+        fakeClient.Environment = ServerEnvironment::Default;
+        fakeClient.ResponseStatusCode = HttpStatusCode::InternalServerError;
+        try {
+          plugin = co_await SkillsAsync(fakeClient, L"pluginId", L"version");
+          assert(false);
+        }
+        catch (winrt::hresult_error const& e) {
+          assert(e.code() == HTTP_E_STATUS_SERVER_ERROR);
+        }
+        catch (...) {
+          assert(false);
+        }
+
+        auto user = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::UserGetAsync(L"foo");
       }
-      catch (winrt::hresult_invalid_argument const& e) {
-				assert(e.code() == E_INVALIDARG);
-      }
-      catch (...) {
-				assert(false);
-			}
-
-      fakeClient.Environment = ServerEnvironment::Default;
-      fakeClient.ResponseStatusCode = HttpStatusCode::InternalServerError;
-      try {
-			  plugin = co_await SkillsAsync(fakeClient, L"pluginId", L"version");
-				assert(false);
-			}
-      catch (winrt::hresult_error const& e) {
-				assert(e.code() == HTTP_E_STATUS_SERVER_ERROR);
-			}
-      catch (...) {
-				assert(false);
-			}
-
     }
 }

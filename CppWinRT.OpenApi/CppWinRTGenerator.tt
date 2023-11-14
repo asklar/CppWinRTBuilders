@@ -20,7 +20,7 @@
 // <#= Title #>
 // Version <#= Version #>
 
-namespace winrt::OpenApi
+namespace <#= Namespace #>
 {
 enum class ServerEnvironment
 {
@@ -43,46 +43,88 @@ constexpr std::array ServerConfigList = {
 <# } #>
 };
 
-<# foreach (var newType in types.Where(x => !x.Value.IsBuiltIn)) { #>
+struct Void {
+  Void() = default;
+  template<typename TIn> Void(TIn&&) {}
+};
+
+<# foreach (var newType in GetGraphOrderedCustomTypes().Where(x => x.Key != "null")) { #>
 
 struct <#= newType.Value.CppWinRTName.ToCamelCase() #>
 {
 <# foreach (var property in newType.Value.Members) { #>
   <#= LookupType(property.Schema.JsonName).CppWinRTName #> <#= property.Name #>{};
 <# } #>
+
   <#= newType.Value.CppWinRTName.ToCamelCase() #>() = default;
-  <#= newType.Value.CppWinRTName.ToCamelCase() #>(const winrt::Windows::Data::Json::JsonObject& json)
+
+<# if (!newType.Value.IsArray) { #>
+	<#= newType.Value.CppWinRTName.ToCamelCase() #>(const winrt::Windows::Data::Json::JsonObject& json)
   {
+<# foreach (var property in newType.Value.Members) { #>
+    <#= property.Name #> = <#= GetCppCast(property.Schema.JsonName) #>(json.<#= JsonObjectMethod(property) #>(L"<#= property.Name #>"));
+<# } #>
+  }
+<# } else { 
+    var elementType = GetArrayElementType(newType.Value);
+    var elementTypeCppWinRT = elementType.CppWinRTFullName;
+    var getFromJsonMethodName = GetFromJsonMethodName(elementType);
+#>
+  std::vector<<#= elementTypeCppWinRT #>> items;
+  <#= newType.Value.CppWinRTName.ToCamelCase() #>(const winrt::Windows::Data::Json::JsonArray& json)
+  {
+    for (const auto& e : json)
+    {
+      items.emplace_back(std::move(<#= elementTypeCppWinRT #>{e.<#= getFromJsonMethodName #>()}));
+    }
 <# foreach (var property in newType.Value.Members) { #>
     <#= property.Name #> = json.<#= JsonObjectMethod(property) #>(L"<#= property.Name #>");
 <# } #>
   }
+<# } #>
+
   winrt::Windows::Data::Json::IJsonValue ToJsonValue() const
   {
+<# if (!newType.Value.IsArray) { #>
     auto json = winrt::Windows::Data::Json::JsonObject();
 <# foreach (var property in newType.Value.Members) { #>
-		json.Insert(L"<#= property.Name #>", <#= CreateValueMethodName(property) #>(<#= property.Name #>));
+		json.Insert(L"<#= property.Name #>", <#= CreateValueMethodName(property.Schema) #>(<#= property.Name #>));
+<# } #>
+<# } else {
+		var elementType = GetArrayElementType(newType.Value);
+		var createValueMethodName = CreateValueMethodName(elementType);
+#>
+		auto json = winrt::Windows::Data::Json::JsonArray();
+		for (const auto& e : items)
+		{
+			json.Append(<#= createValueMethodName #>(e));
+		}
 <# } #>
 		return json;
   }
+
+  static auto ToJsonValue(const <#= newType.Value.CppWinRTName.ToCamelCase() #>& value)
+	{
+		return value.ToJsonValue();
+	}
 };
 
 <# } #>
-}
 
-namespace winrt::OpenApi
-{
+// APIs
+
 <# foreach (var path in Paths) { #>
 <#= path.DoxygenComment #>
 template<typename THttpClient, ServerEnvironment serverEnvironment = ServerEnvironment::Default>
-wil::com_task<winrt::OpenApi::<#= path.ResponseType.CppWinRTName.ToCamelCase() #>> <#= path.GetCppName() #>(<#= GetCppWinRTParameters(path, true) #>)
+<# System.Diagnostics.Debug.WriteLine(path.PathUriTemplate);#>
+wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, true) #>)
 {
   constexpr auto serverUri = std::find_if(ServerConfigList.begin(), ServerConfigList.end(), [](const auto& config) { return config.environment == serverEnvironment; })->uri;
   auto path = std::format(<#= ConstructPath(path) #>);
   winrt::Windows::Data::Json::JsonObject jsonBody;
 <# if (path.RequestBody != null) { #>
 <#   foreach (var property in path.RequestBody.Properties) { #>
-  auto jsonValue_<#= property.Name #> = <#= CreateValueMethodName(property) #>(<#= property.Name #>);
+  auto jsonValue_<#= property.Name #> = <#= CreateValueMethodName(property.Schema) #>(<#= property.Name #>);
   jsonBody.Insert(L"<#= property.Name #>", jsonValue_<#= property.Name #>);
 <#   } 
   } #>
@@ -93,19 +135,28 @@ wil::com_task<winrt::OpenApi::<#= path.ResponseType.CppWinRTName.ToCamelCase() #
   auto response = co_await _client.SendRequestAsync(request);
   response.EnsureSuccessStatusCode();
   auto responseContent = co_await response.Content().ReadAsStringAsync();
+<# if (path.ResponseType.IsArray) { #>
+  auto responseJson = winrt::Windows::Data::Json::JsonArray::Parse(responseContent);
+<# } else { #>
   auto responseJson = winrt::Windows::Data::Json::JsonObject::Parse(responseContent);
+<# } #>
   // parse the json as <#= path.ResponseType.CppWinRTName #>
-  co_return winrt::OpenApi::<#= path.ResponseType.CppWinRTName.ToCamelCase() #>{responseJson};
+  co_return <#= path.ResponseType.CppWinRTFullName #>{responseJson};
 }
 
 <#= path.DoxygenComment #>
 template<ServerEnvironment serverEnvironment = ServerEnvironment::Default>
-wil::com_task<winrt::OpenApi::<#= path.ResponseType.CppWinRTName.ToCamelCase() #>> <#= path.GetCppName() #>(<#= GetCppWinRTParameters(path, false) #>)
+wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, false) #>)
 {
   auto _client = winrt::Windows::Web::Http::HttpClient();
-  auto ret = co_await <#= path.GetCppName() #><decltype(_client), serverEnvironment>(<#= path.GetParametersNamesWithHttpClient() #>);
+  auto ret = co_await <#= GetPathCppName(path) #><decltype(_client), serverEnvironment>(<#= path.GetParametersNamesWithHttpClient() #>);
   _client.Close();
+<# if (path.ResponseType.CppWinRTName == "Void") { #>
+  UNREFERENCED_PARAMETER(ret);
+  co_return Void{};
+<# } else { #> 
   co_return ret;
+<# } #>
 }
 
 <# } #>
