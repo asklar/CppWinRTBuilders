@@ -239,44 +239,51 @@ namespace CppWinRT.OpenApi
             
             #line default
             #line hidden
-            this.Write("    ");
+            this.Write("\tif (json.HasKey(L\"");
             
             #line 70 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
+            
+            #line default
+            #line hidden
+            this.Write("\"))\r\n\t{\r\n\t\t");
+            
+            #line 72 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write(" = ");
             
-            #line 70 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 72 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCppCast(property.Schema.JsonName)));
             
             #line default
             #line hidden
             this.Write("(json.");
             
-            #line 70 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 72 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(JsonObjectMethod(property)));
             
             #line default
             #line hidden
             this.Write("(L\"");
             
-            #line 70 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 72 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
-            this.Write("\"));\r\n");
+            this.Write("\"));\r\n\t}\r\n");
             
-            #line 71 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 74 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
             this.Write("  }\r\n");
             
-            #line 73 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 76 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } else { 
     var elementType = GetArrayElementType(newType.Value);
     var elementTypeCppWinRT = elementType.CppWinRTFullName;
@@ -287,14 +294,14 @@ namespace CppWinRT.OpenApi
             #line hidden
             this.Write("  std::vector<");
             
-            #line 78 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 81 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(elementTypeCppWinRT));
             
             #line default
             #line hidden
             this.Write("> items;\r\n  ");
             
-            #line 79 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 82 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(newType.Value.CppWinRTName.ToCamelCase()));
             
             #line default
@@ -302,104 +309,104 @@ namespace CppWinRT.OpenApi
             this.Write("(const winrt::Windows::Data::Json::JsonArray& json)\r\n  {\r\n    for (const auto& e " +
                     ": json)\r\n    {\r\n      items.emplace_back(std::move(");
             
-            #line 83 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 86 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(elementTypeCppWinRT));
             
             #line default
             #line hidden
             this.Write("{e.");
             
-            #line 83 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 86 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(getFromJsonMethodName));
             
             #line default
             #line hidden
             this.Write("()}));\r\n    }\r\n");
             
-            #line 85 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 88 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  foreach (var property in newType.Value.Members) { 
             
             #line default
             #line hidden
             this.Write("    ");
             
-            #line 86 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 89 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write(" = json.");
             
-            #line 86 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 89 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(JsonObjectMethod(property)));
             
             #line default
             #line hidden
             this.Write("(L\"");
             
-            #line 86 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 89 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write("\");\r\n");
             
-            #line 87 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 90 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
             this.Write("  }\r\n");
             
-            #line 89 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 92 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
             this.Write("\r\n  winrt::Windows::Data::Json::IJsonValue ToJsonValue() const\r\n  {\r\n");
             
-            #line 93 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 96 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  if (!newType.Value.IsArray) { 
             
             #line default
             #line hidden
             this.Write("    auto json = winrt::Windows::Data::Json::JsonObject();\r\n");
             
-            #line 95 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 98 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  foreach (var property in newType.Value.Members) { 
             
             #line default
             #line hidden
             this.Write("\t\tjson.Insert(L\"");
             
-            #line 96 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 99 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write("\", ");
             
-            #line 96 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 99 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateValueMethodName(property.Schema)));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 96 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 99 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write("));\r\n");
             
-            #line 97 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 100 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
             
-            #line 98 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 101 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } else {
 		var elementType = GetArrayElementType(newType.Value);
 		var createValueMethodName = CreateValueMethodName(elementType);
@@ -410,28 +417,28 @@ namespace CppWinRT.OpenApi
             this.Write("\t\tauto json = winrt::Windows::Data::Json::JsonArray();\r\n\t\tfor (const auto& e : it" +
                     "ems)\r\n\t\t{\r\n\t\t\tjson.Append(");
             
-            #line 105 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 108 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(createValueMethodName));
             
             #line default
             #line hidden
             this.Write("(e));\r\n\t\t}\r\n");
             
-            #line 107 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 110 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
             this.Write("\t\treturn json;\r\n  }\r\n\r\n  static auto ToJsonValue(const ");
             
-            #line 111 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 114 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(newType.Value.CppWinRTName.ToCamelCase()));
             
             #line default
             #line hidden
             this.Write("& value)\r\n\t{\r\n\t\treturn value.ToJsonValue();\r\n\t}\r\n};\r\n\r\n");
             
-            #line 117 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 120 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
@@ -472,48 +479,50 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
 
 ");
             
-            #line 152 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 155 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  foreach (var path in Paths) { 
+var TSecuritySchemaTemplateTypeParam = (path.Security != null && path.Security.Count() > 0) ? $"typename TSecuritySchema = {path.DefaultSecurityCppType}," : string.Empty;
+
             
             #line default
             #line hidden
             
-            #line 153 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 158 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.DoxygenComment));
             
             #line default
             #line hidden
-            this.Write("\r\ntemplate<typename THttpClient, typename TSecuritySchema = ");
+            this.Write("\r\ntemplate<typename THttpClient, ");
             
-            #line 154 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(path.DefaultSecurityCppType));
+            #line 159 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(TSecuritySchemaTemplateTypeParam));
             
             #line default
             #line hidden
-            this.Write(", ServerEnvironment serverEnvironment = ServerEnvironment::Default>\r\n");
+            this.Write("ServerEnvironment serverEnvironment = ServerEnvironment::Default>\r\n");
             
-            #line 155 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 160 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  System.Diagnostics.Debug.WriteLine(path.PathUriTemplate);
             
             #line default
             #line hidden
             this.Write("wil::com_task<");
             
-            #line 156 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 161 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.ResponseType.CppWinRTFullName));
             
             #line default
             #line hidden
             this.Write("> ");
             
-            #line 156 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 161 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(GetPathCppName(path)));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 156 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 161 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCppWinRTParameters(path, true)));
             
             #line default
@@ -522,62 +531,62 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
                     "onfigList.end(), [](const auto& config) { return config.environment == serverEnv" +
                     "ironment; })->uri;\r\n  auto path = std::format(");
             
-            #line 159 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 164 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(ConstructPath(path)));
             
             #line default
             #line hidden
             this.Write(");\r\n  winrt::Windows::Data::Json::JsonObject jsonBody;\r\n");
             
-            #line 161 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 166 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  if (path.RequestBody != null) { 
             
             #line default
             #line hidden
             
-            #line 162 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 167 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
    foreach (var property in path.RequestBody.Properties) { 
             
             #line default
             #line hidden
             this.Write("  auto jsonValue_");
             
-            #line 163 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 168 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write(" = ");
             
-            #line 163 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 168 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(CreateValueMethodName(property.Schema)));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 163 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 168 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write(");\r\n  jsonBody.Insert(L\"");
             
-            #line 164 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 169 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write("\", jsonValue_");
             
-            #line 164 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 169 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(property.Name));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 165 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 170 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
    } 
   } 
             
@@ -586,7 +595,7 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
             this.Write("  auto jsonPayload = jsonBody.Stringify();\r\n\r\n  auto request = winrt::Windows::We" +
                     "b::Http::HttpRequestMessage(winrt::Windows::Web::Http::HttpMethod::");
             
-            #line 169 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 174 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.Method));
             
             #line default
@@ -595,23 +604,31 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
                     "b::Http::HttpStringContent(jsonPayload, winrt::Windows::Storage::Streams::Unicod" +
                     "eEncoding::Utf8, L\"application/json\"));\r\n");
             
-            #line 171 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 176 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  if (path.Security != null && path.Security.Count() > 0) { 
             
             #line default
             #line hidden
             this.Write("  _security.apply(request, _client);\r\n");
             
-            #line 173 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 178 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
-            this.Write("  auto response = co_await _client.SendRequestAsync(request);\r\n  response.EnsureS" +
-                    "uccessStatusCode();\r\n  auto responseContent = co_await response.Content().ReadAs" +
-                    "StringAsync();\r\n");
+            this.Write(@"  auto response = co_await _client.SendRequestAsync(request);
+  auto responseContent = co_await response.Content().ReadAsStringAsync();
+  if (!response.IsSuccessStatusCode())
+  {
+    const auto errorJson = winrt::Windows::Data::Json::JsonObject::Parse(responseContent);
+	const auto statusCode = static_cast<int32_t>(response.StatusCode());
+	const auto hresult = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_HTTP, statusCode);
+	throw winrt::hresult_error(hresult, errorJson.GetNamedString(L""message""));
+  }
+
+");
             
-            #line 177 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 189 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  if (path.ResponseType.IsArray) { 
             
             #line default
@@ -619,7 +636,7 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
             this.Write("  auto responseJson = winrt::Windows::Data::Json::JsonArray::Parse(responseConten" +
                     "t);\r\n");
             
-            #line 179 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 191 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } else { 
             
             #line default
@@ -627,7 +644,7 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
             this.Write("  auto responseJson = winrt::Windows::Data::Json::JsonObject::Parse(responseConte" +
                     "nt);\r\n");
             
-            #line 181 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 193 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
 	if (path.ResponseType.JsonName == "null") { 
             
@@ -635,120 +652,120 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
             #line hidden
             this.Write("  co_return responseJson;\r\n");
             
-            #line 184 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 196 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } else { 
             
             #line default
             #line hidden
             this.Write("  // parse the json as ");
             
-            #line 185 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 197 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.ResponseType.CppWinRTName));
             
             #line default
             #line hidden
             this.Write("\r\n  co_return ");
             
-            #line 186 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 198 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.ResponseType.CppWinRTFullName));
             
             #line default
             #line hidden
             this.Write("{responseJson};\r\n");
             
-            #line 187 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 199 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
             this.Write("}\r\n\r\n");
             
-            #line 190 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 202 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.DoxygenComment));
             
             #line default
             #line hidden
-            this.Write("\r\ntemplate<typename TSecuritySchema = ");
+            this.Write("\r\n\r\ntemplate<");
             
-            #line 191 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
-            this.Write(this.ToStringHelper.ToStringWithCulture(path.DefaultSecurityCppType));
+            #line 204 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(TSecuritySchemaTemplateTypeParam));
             
             #line default
             #line hidden
-            this.Write(", ServerEnvironment serverEnvironment = ServerEnvironment::Default>\r\nwil::com_tas" +
-                    "k<");
+            this.Write("ServerEnvironment serverEnvironment = ServerEnvironment::Default>\r\nwil::com_task<" +
+                    "");
             
-            #line 192 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 205 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.ResponseType.CppWinRTFullName));
             
             #line default
             #line hidden
             this.Write("> ");
             
-            #line 192 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 205 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(GetPathCppName(path)));
             
             #line default
             #line hidden
             this.Write("(");
             
-            #line 192 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 205 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(GetCppWinRTParameters(path, false)));
             
             #line default
             #line hidden
             this.Write(")\r\n{\r\n  auto _client = winrt::Windows::Web::Http::HttpClient();\r\n");
             
-            #line 195 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 208 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  var TSecuritySchemaTemplateParam = (path.Security != null && path.Security.Count() > 0) ? ", TSecuritySchema" : ""; 
             
             #line default
             #line hidden
             this.Write("  auto ret = co_await ");
             
-            #line 196 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 209 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(GetPathCppName(path)));
             
             #line default
             #line hidden
             this.Write("<decltype(_client)");
             
-            #line 196 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 209 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(TSecuritySchemaTemplateParam));
             
             #line default
             #line hidden
             this.Write(", serverEnvironment>(");
             
-            #line 196 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 209 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(path.GetParametersNamesWithHttpClient()));
             
             #line default
             #line hidden
             this.Write(");\r\n  _client.Close();\r\n");
             
-            #line 198 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 211 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  if (path.ResponseType.CppWinRTName == "Void") { 
             
             #line default
             #line hidden
             this.Write("  UNREFERENCED_PARAMETER(ret);\r\n  co_return Void{};\r\n");
             
-            #line 201 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 214 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } else { 
             
             #line default
             #line hidden
             this.Write(" \r\n  co_return ret;\r\n");
             
-            #line 203 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 216 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default
             #line hidden
             this.Write("}\r\n\r\n");
             
-            #line 206 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
+            #line 219 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\CppWinRTGenerator.tt"
  } 
             
             #line default

@@ -250,17 +250,29 @@ namespace winrt::WinRTBuilderSample::implementation
         }
         */
 
-        
-        auto inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync();
 
-        for (auto const& [k, v] : inventory) {
-          std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
+        try {
+            auto apikey = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api_key(L"special-key");
+            auto inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync(apikey);
+
+            for (auto const& [k, v] : inventory) {
+                std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
+            }
+
+            auto oauth = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Petstore_auth(L"the_petstore_auth_token");
+            inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync(oauth);
+            for (auto const& [k, v] : inventory) {
+                std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
+            }
+
+            auto order = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Order();
+            order.id = 10;
+            order.petId = 198772;
+            order.quantity = 7;
+            auto order2 = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::PlaceOrderAsync(order);
         }
-
-        auto oauth = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Petstore_auth(L"petstore_auth");
-        inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync(oauth);
-        for (auto const& [k, v] : inventory) {
-            std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
+        catch (winrt::hresult_error const& e) {
+            std::wcout << e.message().c_str() << std::endl;
         }
 
       }

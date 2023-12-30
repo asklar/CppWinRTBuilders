@@ -67,7 +67,10 @@ struct <#= newType.Value.CppWinRTName.ToCamelCase() #>
 	<#= newType.Value.CppWinRTName.ToCamelCase() #>(const winrt::Windows::Data::Json::JsonObject& json)
   {
 <# foreach (var property in newType.Value.Members) { #>
-    <#= property.Name #> = <#= GetCppCast(property.Schema.JsonName) #>(json.<#= JsonObjectMethod(property) #>(L"<#= property.Name #>"));
+	if (json.HasKey(L"<#= property.Name #>"))
+	{
+		<#= property.Name #> = <#= GetCppCast(property.Schema.JsonName) #>(json.<#= JsonObjectMethod(property) #>(L"<#= property.Name #>"));
+	}
 <# } #>
   }
 <# } else { 
@@ -149,9 +152,11 @@ constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>:
 
 // APIs
 
-<# foreach (var path in Paths) { #>
+<# foreach (var path in Paths) { 
+var TSecuritySchemaTemplateTypeParam = (path.Security != null && path.Security.Count() > 0) ? $"typename TSecuritySchema = {path.DefaultSecurityCppType}," : string.Empty;
+#>
 <#= path.DoxygenComment #>
-template<typename THttpClient, typename TSecuritySchema = <#= path.DefaultSecurityCppType #>, ServerEnvironment serverEnvironment = ServerEnvironment::Default>
+template<typename THttpClient, <#= TSecuritySchemaTemplateTypeParam #>ServerEnvironment serverEnvironment = ServerEnvironment::Default>
 <# System.Diagnostics.Debug.WriteLine(path.PathUriTemplate);#>
 wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, true) #>)
 {
@@ -172,8 +177,15 @@ wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path
   _security.apply(request, _client);
 <# } #>
   auto response = co_await _client.SendRequestAsync(request);
-  response.EnsureSuccessStatusCode();
   auto responseContent = co_await response.Content().ReadAsStringAsync();
+  if (!response.IsSuccessStatusCode())
+  {
+    const auto errorJson = winrt::Windows::Data::Json::JsonObject::Parse(responseContent);
+	const auto statusCode = static_cast<int32_t>(response.StatusCode());
+	const auto hresult = MAKE_HRESULT(SEVERITY_ERROR, FACILITY_HTTP, statusCode);
+	throw winrt::hresult_error(hresult, errorJson.GetNamedString(L"message"));
+  }
+
 <# if (path.ResponseType.IsArray) { #>
   auto responseJson = winrt::Windows::Data::Json::JsonArray::Parse(responseContent);
 <# } else { #>
@@ -188,7 +200,8 @@ wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path
 }
 
 <#= path.DoxygenComment #>
-template<typename TSecuritySchema = <#= path.DefaultSecurityCppType #>, ServerEnvironment serverEnvironment = ServerEnvironment::Default>
+
+template<<#= TSecuritySchemaTemplateTypeParam  #>ServerEnvironment serverEnvironment = ServerEnvironment::Default>
 wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, false) #>)
 {
   auto _client = winrt::Windows::Web::Http::HttpClient();
