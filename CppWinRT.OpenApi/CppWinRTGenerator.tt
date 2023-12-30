@@ -13,6 +13,7 @@
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Foundation.Collections.h>
 #include <winrt/Windows.Web.Http.h>
+#include <winrt/Windows.Web.Http.Headers.h>
 #include <wil/coroutine.h>
 #include <format>
 #include <array>
@@ -47,6 +48,10 @@ struct Void {
   Void() = default;
   template<typename TIn> Void(TIn&&) {}
 };
+
+<# foreach (var security in Security) { #>
+<#= security.Value.GetCppDefinition() #>
+<# } #>
 
 <# foreach (var newType in GetGraphOrderedCustomTypes().Where(x => x.Key != "null")) { #>
 
@@ -111,11 +116,42 @@ struct <#= newType.Value.CppWinRTName.ToCamelCase() #>
 
 <# } #>
 
+namespace details
+{
+template<typename T>
+struct HasSendRequestAsync
+{
+  template<typename U, typename = decltype(std::declval<U>().SendRequestAsync(std::declval<winrt::Windows::Web::Http::HttpRequestMessage>()))>
+  static std::true_type test(int);
+
+  template<typename>
+  static std::false_type test(...);
+
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template<typename T>
+struct HasClose
+{
+  template<typename U, typename = decltype(std::declval<U>().Close())>
+  static std::true_type test(int);
+
+  template<typename>
+  static std::false_type test(...);
+
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template<typename T>
+constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>::value;
+
+}
+
 // APIs
 
 <# foreach (var path in Paths) { #>
 <#= path.DoxygenComment #>
-template<typename THttpClient, ServerEnvironment serverEnvironment = ServerEnvironment::Default>
+template<typename THttpClient, typename TSecuritySchema = <#= path.DefaultSecurityCppType #>, ServerEnvironment serverEnvironment = ServerEnvironment::Default>
 <# System.Diagnostics.Debug.WriteLine(path.PathUriTemplate);#>
 wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, true) #>)
 {
@@ -132,6 +168,9 @@ wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path
 
   auto request = winrt::Windows::Web::Http::HttpRequestMessage(winrt::Windows::Web::Http::HttpMethod::<#= path.Method #>(), winrt::Windows::Foundation::Uri(path));
   request.Content(winrt::Windows::Web::Http::HttpStringContent(jsonPayload, winrt::Windows::Storage::Streams::UnicodeEncoding::Utf8, L"application/json"));
+<# if (path.Security != null && path.Security.Count() > 0) { #>
+  _security.apply(request, _client);
+<# } #>
   auto response = co_await _client.SendRequestAsync(request);
   response.EnsureSuccessStatusCode();
   auto responseContent = co_await response.Content().ReadAsStringAsync();
@@ -139,17 +178,22 @@ wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path
   auto responseJson = winrt::Windows::Data::Json::JsonArray::Parse(responseContent);
 <# } else { #>
   auto responseJson = winrt::Windows::Data::Json::JsonObject::Parse(responseContent);
-<# } #>
+<# } 
+	if (path.ResponseType.JsonName == "null") { #>
+  co_return responseJson;
+<# } else { #>
   // parse the json as <#= path.ResponseType.CppWinRTName #>
   co_return <#= path.ResponseType.CppWinRTFullName #>{responseJson};
+<# } #>
 }
 
 <#= path.DoxygenComment #>
-template<ServerEnvironment serverEnvironment = ServerEnvironment::Default>
+template<typename TSecuritySchema = <#= path.DefaultSecurityCppType #>, ServerEnvironment serverEnvironment = ServerEnvironment::Default>
 wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, false) #>)
 {
   auto _client = winrt::Windows::Web::Http::HttpClient();
-  auto ret = co_await <#= GetPathCppName(path) #><decltype(_client), serverEnvironment>(<#= path.GetParametersNamesWithHttpClient() #>);
+<# var TSecuritySchemaTemplateParam = (path.Security != null && path.Security.Count() > 0) ? ", TSecuritySchema" : ""; #>
+  auto ret = co_await <#= GetPathCppName(path) #><decltype(_client)<#= TSecuritySchemaTemplateParam#>, serverEnvironment>(<#= path.GetParametersNamesWithHttpClient() #>);
   _client.Close();
 <# if (path.ResponseType.CppWinRTName == "Void") { #>
   UNREFERENCED_PARAMETER(ret);

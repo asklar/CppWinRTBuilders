@@ -8,6 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="SecuritySchemeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SecuritySchemeGenerator.tt</DependentUpon>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="System.CodeDom" Version="7.0.0" />
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
   </ItemGroup>
@@ -16,6 +24,10 @@
     <None Update="CppWinRTGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>CppWinRTGenerator.cs</LastGenOutput>
+    </None>
+    <None Update="SecuritySchemeGenerator.tt">
+      <Generator>TextTemplatingFilePreprocessor</Generator>
+      <LastGenOutput>SecuritySchemeGenerator.cs</LastGenOutput>
     </None>
   </ItemGroup>
 
@@ -28,6 +40,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>CppWinRTGenerator.tt</DependentUpon>
+    </Compile>
+    <Compile Update="SecuritySchemeGenerator.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>SecuritySchemeGenerator.tt</DependentUpon>
     </Compile>
   </ItemGroup>
 

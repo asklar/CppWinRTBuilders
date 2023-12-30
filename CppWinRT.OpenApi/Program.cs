@@ -80,7 +80,7 @@ var json = JsonSerializer.Deserialize<JsonObject>(inputSpec)!;
 var title = json["info"]!["title"]!.ToString();
 var version = json["info"]!["version"]!.ToString();
 
-var Namespace = $"winrt::OpenApi::{title.MakeCppIdentifier()}";
+var Namespace = title.MakeCppIdentifier();
 var generator = new CppWinRT.OpenApi.CppWinRTGenerator
 {
   Title = title,
@@ -118,6 +118,74 @@ else
   generator.ServerUri = server.Value;
 }
 
+var securitySchemes = json["components"]?["securitySchemes"]?.AsObject();
+if (securitySchemes != null)
+{
+    foreach (var scheme in securitySchemes)
+    {
+        var schemeName = scheme.Key;
+        var schemeValue = scheme.Value!.AsObject()!;
+        var type = schemeValue["type"]!.ToString();
+        if (type == "http")
+        {
+            var httpScheme = new CppWinRT.OpenApi.HttpSecurityScheme
+            {
+                Scheme = schemeValue["scheme"]!.ToString(),
+                BearerFormat = schemeValue["bearerFormat"]?.ToString() ?? string.Empty,
+                Resource = "TODO",
+                Type = type,
+                Name = schemeName,
+            };
+            generator.Security[schemeName] = httpScheme;
+        }
+        else if (type == "apiKey")
+        {
+            var apiKeyScheme = new CppWinRT.OpenApi.ApiKeySecurityScheme
+            {
+                Name = schemeValue["name"]!.ToString(),
+                In = schemeValue["in"]!.ToString(),
+                Type = type,
+            };
+            generator.Security[schemeName] = apiKeyScheme;
+        }
+        else if (type == "oauth2")
+        {
+            var flows = schemeValue["flows"]!.AsObject();
+            foreach (var flow in flows)
+            {
+                var flowName = flow.Key;
+                var flowValue = flow.Value!.AsObject()!;
+                var oauth2Scheme = new CppWinRT.OpenApi.OAuth2SecurityScheme
+                {
+                    AuthorizationUrl = flowValue["authorizationUrl"]?.ToString(),
+                    TokenUrl = flowValue["tokenUrl"]?.ToString(),
+                    Flow = flowName,
+                    Type = type,
+                    Name = schemeName,
+                };
+                var scopes = flowValue["scopes"]!.AsObject();
+                foreach (var scope in scopes)
+                {
+                    oauth2Scheme.Scopes[scope.Key] = scope.Value!.ToString();
+                }
+                generator.Security[schemeName] = oauth2Scheme;
+            }
+        }
+        else if (type == "openIdConnect")
+        {
+            var openIdConnectScheme = new CppWinRT.OpenApi.OpenIdConnectSecurityScheme
+            {
+                OpenIdConnectUrl = schemeValue["openIdConnectUrl"]!.ToString(),
+                Type = type,
+                Name = schemeName,
+            };
+            generator.Security[schemeName] = openIdConnectScheme;
+        }
+    }
+}
+
+var defaultSecurity = json["security"]?.AsArray();
+
 var paths = json["paths"]!.AsObject();
 foreach (var path in paths)
 {
@@ -134,7 +202,9 @@ foreach (var path in paths)
     var requestBody = methodValue["requestBody"]?.AsObject();
     var responses = methodValue["responses"]?.AsObject();
     var tags = methodValue["tags"]?.AsArray();
-    var security = methodValue["security"]?.AsArray();
+    var securityEntries = methodValue["security"]?.AsArray() ?? defaultSecurity;
+
+    var fnSecuritySchemes = securityEntries?.SelectMany(s => s!.AsObject()!.Select(security => generator.Security[security.Key])).ToArray();
     var pathObject = new CppWinRT.OpenApi.Path
     {
       PathUriTemplate = pathName,
@@ -143,7 +213,7 @@ foreach (var path in paths)
       Summary = summary,
       Description = description,
       Tags = tags?.Select(x => x!.ToString()).ToArray(),
-      Security = security?.Select(x => x!.ToString()).ToArray(),
+      Security = fnSecuritySchemes,
     };
     foreach (var parameter in parameters)
     {
@@ -307,19 +377,25 @@ namespace CppWinRT.OpenApi
     public string Summary { get; set; }
     public string Description { get; set; }
     public string[] Tags { get; set; }
-    public string[] Security { get; set; }
+    public SecurityScheme[] Security { get; set; }
 
+    public string DefaultSecurityCppType =>
+            Security != null && Security.Length > 0 ? Security[0].CppType : "void";
     public List<Parameter> Parameters { get; } = new();
 
-    public string GetParametersNamesWithHttpClient()
-    {
-      var allParams = new string[] { "_client" }.Concat(Parameters.Select(p => p.Name));
-      if (RequestBody != null)
-      {
-        allParams = allParams.Concat(RequestBody.Properties.Select(p => p.Name));
-      }
-      return string.Join(", ", allParams);
-    }
+        public string GetParametersNamesWithHttpClient()
+        {
+            var allParams = new string[] { "_client" }.Concat(Parameters.Select(p => p.Name));
+            if (RequestBody != null)
+            {
+                allParams = allParams.Concat(RequestBody.Properties.Select(p => p.Name));
+            }
+            if (Security != null && Security.Length > 0)
+            {
+                allParams = allParams.Concat(new string[] { "_security" });
+            }
+            return string.Join(", ", allParams);
+        }
 
     public Request RequestBody;
 
@@ -348,186 +424,252 @@ namespace CppWinRT.OpenApi
 
     public string OperationId { get; internal set; }
   }
-  public partial class CppWinRTGenerator
-  {
-    public string SpecificationUrl { get; set; }
-    public string OpenApiPath { get; set; }
-    public string Title { get; set; }
-    public string Version { get; set; }
-    public string Namespace { get; set; }
-    public List<Path> Paths = new();
-    public string ServerDescription { get; set; }
-    public string ServerUri { get; set; }
-    public Dictionary<string, string> Servers = new();
 
-    public Dictionary<string, CppWinRTType> types = new()
+    public partial class SecuritySchemeGenerator
     {
-      //     { "string", new CppWinRTType{ JsonName = "string", CppWinRTName = "winrt::hstring", IsBuiltIn = true } },
-    };
+        private readonly SecurityScheme _scheme;
 
-    public List<KeyValuePair<string, CppWinRTType>> GetGraphOrderedCustomTypes()
-    {
-      var customTypes = types.Where(t => !t.Value.IsBuiltIn).ToList();
-      // build a graph of types, where each type is a node and each member of a non-builtin type is an edge
-      var graph = new Dictionary<CppWinRTType, List<CppWinRTType>>();
-      foreach (var type in customTypes)
-      {
-        var members = type.Value.Members.Where(m => !(m.Schema.IsBuiltIn || m.Schema.CppWinRTName == "Void"))
-          .Select(m => m.Schema).ToList();
-        graph[type.Value] = members;
-      }
-      // Now find a walk through the tree that visits each node only once in dependency order:
-      // we can visit a node only if either a) it has no dependencies or b) all its dependencies have been visited already
-      var visited = new HashSet<CppWinRTType>();
-      var result = new List<KeyValuePair<string, CppWinRTType>>();
-      while (visited.Count < graph.Count)
-      {
-        var next = graph.Where(n => !visited.Contains(n.Key) && n.Value.All(v => visited.Contains(v))).FirstOrDefault();
-        if (next.Key == null) throw new Exception("Cannot find a walk through the graph");
-        visited.Add(next.Key);
-        result.Add(customTypes.First(t => t.Value == next.Key));
-      }
-      return result;
-    }
-
-    public string GetCppCast(string jsonType)
-    {
-      if (builtInTypes.ContainsKey(jsonType)) return builtInTypes[jsonType].CastFromJson ?? string.Empty;
-      return string.Empty;
-    }
-
-    public string GetBuiltInCppWinRTTypeName(string name)
-    {
-      if (builtInTypes.ContainsKey(name)) return builtInTypes[name].CppName;
-      return string.Empty;
-    }
-
-    public CppWinRTType GetArrayElementType(CppWinRTType type)
-    {
-      if (!type.IsArray) throw new ArgumentException("Type is not an array");
-      var arrayType = type.JsonName;
-      var elementType = arrayType.Substring("ArrayOf_".Length);
-      return LookupType(elementType);
-    }
-    public CppWinRTType ResolveType(JsonObject node, JsonObject universe)
-    {
-      if (node == null)
-      {
-        var type = new CppWinRTType
+        public SecuritySchemeGenerator(SecurityScheme scheme)
         {
-          JsonName = "null",
-          CppWinRTName = "Void",
-          Namespace = Namespace,
-        };
-        types[type.JsonName] = type;
-        return type;
-      }
-      if (node.ContainsKey("type"))
-      {
-        var typeName = node["type"]!.ToString()!;
-        CppWinRTType type;
-        if (typeName == "array")
-        {
-          var items = node["items"]!.AsObject();
-          var itemType = ResolveType(items, universe);
-          var jsonName = $"ArrayOf_{itemType.JsonName}";
-          if (types.ContainsKey(jsonName)) return types[jsonName];
-          type = new CppWinRTType
-          {
-            JsonName = jsonName,
-            CppWinRTName = $"ArrayOf_{itemType.CppWinRTName}",
-            IsBuiltIn = false,
-            Namespace = Namespace,
-            IsArray = true,
-          };
-          types[jsonName] = type;
+            _scheme = scheme;
         }
-        else
+    }
+
+    public class SecurityScheme
+    {
+        public string Type { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string CppType => Name.MakeCppIdentifier();
+
+        public string GetCppDefinition()
         {
-          type = LookupType(typeName);
+            var generator = new SecuritySchemeGenerator(this);
+            return generator.TransformText();
         }
-        return type;
-      }
-      else if (node.ContainsKey("$ref"))
-      {
-        var refPath = node["$ref"]!.ToString()!;
-        var typeName = refPath.Split('/').Last();
-        if (types.ContainsKey(typeName)) return types[typeName];
-        var typeDef = universe["components"]!["schemas"]![typeName]!.AsObject();
-        var properties = typeDef["properties"]!.AsObject();
-        var members = properties.Select(p => new CppWinRT.OpenApi.Parameter
+    }
+
+    public class ApiKeySecurityScheme : SecurityScheme
+    {
+        //public string Name { get; set; } = string.Empty; // TODO: this should match SecurityScheme.Name?
+        public string In { get; set; } = string.Empty;
+    }
+
+    public class HttpSecurityScheme : SecurityScheme
+    {
+        public string Scheme { get; set; } = string.Empty;
+        public string BearerFormat { get; set; } = string.Empty;
+        public string Resource { get; set; } = string.Empty;
+    }
+
+    public class OAuth2SecurityScheme : SecurityScheme
+    {
+        public string AuthorizationUrl { get; set; } = string.Empty;
+        public string? TokenUrl { get; set; } = string.Empty;
+        public string Flow { get; set; } = string.Empty;
+        public Dictionary<string, string> Scopes { get; set; } = new();
+    }
+
+    public class OpenIdConnectSecurityScheme : SecurityScheme
+    {
+        public string OpenIdConnectUrl { get; set; } = string.Empty;
+    }
+
+
+    public partial class CppWinRTGenerator
+    {
+        public string SpecificationUrl { get; set; }
+        public string OpenApiPath { get; set; }
+        public string Title { get; set; }
+        public string Version { get; set; }
+        public const string OpenApiNamespace = "winrt::OpenApi";
+        public string Namespace { get => OpenApiNamespace + "::" + _namespace; set => _namespace = value; }
+
+        private string _namespace;
+        public List<Path> Paths = new();
+        public string ServerDescription { get; set; }
+        public string ServerUri { get; set; }
+        public Dictionary<string, string> Servers = new();
+        public Dictionary<string, CppWinRTType> types = new();
+        public Dictionary<string, SecurityScheme> Security = new();
+
+        public List<KeyValuePair<string, CppWinRTType>> GetGraphOrderedCustomTypes()
         {
-          Name = p.Key,
-          Schema = ResolveType(p.Value.AsObject(), universe),
-        }).ToList();
-        var type = new CppWinRTType
+            var customTypes = types.Where(t => !t.Value.IsBuiltIn).ToList();
+            // build a graph of types, where each type is a node and each member of a non-builtin type is an edge
+            var graph = new Dictionary<CppWinRTType, List<CppWinRTType>>();
+            foreach (var type in customTypes)
+            {
+                var members = type.Value.Members.Where(m => !(m.Schema.IsBuiltIn || m.Schema.CppWinRTName == "Void"))
+                  .Select(m => m.Schema).ToList();
+                graph[type.Value] = members;
+            }
+            // Now find a walk through the tree that visits each node only once in dependency order:
+            // we can visit a node only if either a) it has no dependencies or b) all its dependencies have been visited already
+            var visited = new HashSet<CppWinRTType>();
+            var result = new List<KeyValuePair<string, CppWinRTType>>();
+            while (visited.Count < graph.Count)
+            {
+                var next = graph.Where(n => !visited.Contains(n.Key) && n.Value.All(v => visited.Contains(v))).FirstOrDefault();
+                if (next.Key == null) throw new Exception("Cannot find a walk through the graph");
+                visited.Add(next.Key);
+                result.Add(customTypes.First(t => t.Value == next.Key));
+            }
+            return result;
+        }
+
+        public string GetCppCast(string jsonType)
         {
-          JsonName = typeName,
-          Members = members,
-          CppWinRTName = typeName,
-          IsBuiltIn = false,
-          Namespace = Namespace,
-        };
-        types[typeName] = type;
-        return type;
-      }
-      throw new Exception("Cannot resolve type");
-    }
-    private CppWinRTType LookupType(string typeName)
-    {
-      if (types.ContainsKey(typeName)) return types[typeName];
-      var cppwinrtType = GetBuiltInCppWinRTTypeName(typeName);
-      if (cppwinrtType != string.Empty)
-      {
-        var type = new CppWinRTType
+            if (builtInTypes.ContainsKey(jsonType)) return builtInTypes[jsonType].CastFromJson ?? string.Empty;
+            return string.Empty;
+        }
+
+        public string GetBuiltInCppWinRTTypeName(string name)
         {
-          JsonName = typeName,
-          CppWinRTName = cppwinrtType,
-          IsBuiltIn = true
-        };
-        types[typeName] = type;
+            if (builtInTypes.ContainsKey(name)) return builtInTypes[name].CppName;
+            return string.Empty;
+        }
 
-        return type;
-      }
-      return null;
-    }
+        public CppWinRTType GetArrayElementType(CppWinRTType type)
+        {
+            if (!type.IsArray) throw new ArgumentException("Type is not an array");
+            var arrayType = type.JsonName;
+            var elementType = arrayType.Substring("ArrayOf_".Length);
+            return LookupType(elementType);
+        }
+        public CppWinRTType ResolveType(JsonObject node, JsonObject universe)
+        {
+            if (node == null)
+            {
+                var type = new CppWinRTType
+                {
+                    JsonName = "null",
+                    CppWinRTName = "JsonObject",
+                    Namespace = "winrt::Windows::Data::Json",
+                };
+                AddType(type);
+                return type;
+            }
+            if (node.ContainsKey("type"))
+            {
+                var typeName = node["type"]!.ToString()!;
+                CppWinRTType type;
+                if (typeName == "array")
+                {
+                    var items = node["items"]!.AsObject();
+                    var itemType = ResolveType(items, universe);
+                    var jsonName = $"ArrayOf_{itemType.JsonName}";
+                    if (types.ContainsKey(jsonName)) return types[jsonName];
+                    type = new CppWinRTType
+                    {
+                        JsonName = jsonName,
+                        CppWinRTName = $"ArrayOf_{itemType.CppWinRTName}",
+                        IsBuiltIn = false,
+                        Namespace = Namespace,
+                        IsArray = true,
+                    };
+                    AddType(type);
+                }
+                else
+                {
+                    type = LookupType(typeName);
+                }
+                return type;
+            }
+            else if (node.ContainsKey("$ref"))
+            {
+                var refPath = node["$ref"]!.ToString()!;
+                var typeName = refPath.Split('/').Last();
+                if (types.ContainsKey(typeName)) return types[typeName];
+                var typeDef = universe["components"]!["schemas"]![typeName]!.AsObject();
+                var properties = typeDef["properties"]!.AsObject();
+                var members = properties.Select(p => new CppWinRT.OpenApi.Parameter
+                {
+                    Name = p.Key,
+                    Schema = ResolveType(p.Value.AsObject(), universe),
+                }).ToList();
+                var type = new CppWinRTType
+                {
+                    JsonName = typeName,
+                    Members = members,
+                    CppWinRTName = typeName,
+                    IsBuiltIn = false,
+                    Namespace = Namespace,
+                };
+                AddType(type);
+                return type;
+            }
+            throw new Exception("Cannot resolve type");
+        }
 
-    public string GetCppWinRTParameters(Path path, bool withHttpClient)
-    {
-      StringBuilder sb = new();
-      var paramDefs = path.Parameters.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
-      if (path.RequestBody != null)
-      {
-        var bodyParams = path.RequestBody.Properties.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
-        paramDefs = paramDefs.Concat(bodyParams);
-      }
-      if (withHttpClient) paramDefs = new string[] { "THttpClient _client" }.Concat(paramDefs);
-      var defs = string.Join(", ", paramDefs);
-      return defs;
-    }
+        private void AddType(CppWinRTType type)
+        {
+            types[type.JsonName] = type;
+        }
 
-    public string ConstructPath(Path path)
-    {
-      // replace the /{foo...}/{bar...}/... from the path template with "/{}/{}/...,  foo, bar, ..."
-      var template = path.PathUriTemplate;
-      Regex regex = new Regex(@"{([^}])*}");
-      // extract the value enclosed by braces from the regex matches
-      var pathVariables = regex.Matches(template).Select(m => m.Value[1..^1]);
-      var pathTemplate = regex.Replace(template, "{}");
-      var comma = pathVariables.Count() > 0 ? ", " : string.Empty;
-      return $"LR\"({{}}{pathTemplate})\", serverUri{comma}{string.Join(", ", pathVariables)}";
-    }
-    struct BuiltInType
-    {
-      public string Get { get; set; }
-      public string Set { get; set; }
-      public string CppName { get; set; }
-      public string CastFromJson { get; set; }
-      public string Namespace { get; set; }
-      public string FromJson { get; set; }
-    }
+        private CppWinRTType LookupType(string typeName)
+        {
+            if (types.ContainsKey(typeName)) return types[typeName];
+            var cppwinrtType = GetBuiltInCppWinRTTypeName(typeName);
+            if (cppwinrtType != string.Empty)
+            {
+                var type = new CppWinRTType
+                {
+                    JsonName = typeName,
+                    CppWinRTName = cppwinrtType,
+                    IsBuiltIn = true
+                };
+                AddType(type);
 
-    Dictionary<string, BuiltInType> builtInTypes = new()
+                return type;
+            }
+            return null;
+        }
+
+        public string GetCppWinRTParameters(Path path, bool withHttpClient)
+        {
+            StringBuilder sb = new();
+            var paramDefs = path.Parameters.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
+            if (path.RequestBody != null)
+            {
+                var bodyParams = path.RequestBody.Properties.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
+                paramDefs = paramDefs.Concat(bodyParams);
+            }
+            if (withHttpClient) paramDefs = new string[] { "std::enable_if_t<details::IsHttpClientIsh_v<THttpClient>, THttpClient> _client" }.Concat(paramDefs);
+
+            if (path.Security != null && path.Security.Length > 0)
+            {
+                Debug.Assert(path.Security.Length == 1);
+                var securityParams = path.Security.Select(s => "const TSecuritySchema& _security = {}");
+                var one = new string[] { securityParams.First() };
+                paramDefs = paramDefs.Concat(one);
+            }
+
+            var defs = string.Join(", ", paramDefs);
+            return defs;
+        }
+
+        public string ConstructPath(Path path)
+        {
+            // replace the /{foo...}/{bar...}/... from the path template with "/{}/{}/...,  foo, bar, ..."
+            var template = path.PathUriTemplate;
+            Regex regex = new Regex(@"{([^}])*}");
+            // extract the value enclosed by braces from the regex matches
+            var pathVariables = regex.Matches(template).Select(m => m.Value[1..^1]);
+            var pathTemplate = regex.Replace(template, "{}");
+            var comma = pathVariables.Count() > 0 ? ", " : string.Empty;
+            return $"LR\"({{}}{pathTemplate})\", serverUri{comma}{string.Join(", ", pathVariables)}";
+        }
+        struct BuiltInType
+        {
+            public string Get { get; set; }
+            public string Set { get; set; }
+            public string CppName { get; set; }
+            public string CastFromJson { get; set; }
+            public string Namespace { get; set; }
+            public string FromJson { get; set; }
+        }
+
+        Dictionary<string, BuiltInType> builtInTypes = new()
     {
       { "string", new BuiltInType{ Get = "GetNamedString", Set = "CreateStringValue", CppName="hstring", Namespace="winrt", FromJson="GetString" } },
       { "integer", new BuiltInType { Get = "GetNamedNumber", Set = "CreateNumberValue", CppName = "int32_t", CastFromJson = "static_cast<int32_t>", FromJson = "GetNumber" } },
@@ -535,67 +677,80 @@ namespace CppWinRT.OpenApi
       { "boolean", new BuiltInType { Get = "GetNamedBoolean", Set = "CreateBooleanValue", CppName= "bool", FromJson = "GetBoolean" } },
     };
 
-    public string CreateValueMethodName(CppWinRTType p)
-    {
-      var jsonType = p.JsonName;
-      if (builtInTypes.ContainsKey(jsonType)) return $"winrt::Windows::Data::Json::JsonValue::{builtInTypes[jsonType].Set}";
-      else return $"{p.CppWinRTFullName}::ToJsonValue";
-    }
+        public string CreateValueMethodName(CppWinRTType p)
+        {
+            var jsonType = p.JsonName;
+            if (builtInTypes.ContainsKey(jsonType)) return $"winrt::Windows::Data::Json::JsonValue::{builtInTypes[jsonType].Set}";
+            else return $"{p.CppWinRTFullName}::ToJsonValue";
+        }
 
-    public string GetFromJsonMethodName(CppWinRTType type)
-    {
-      if (builtInTypes.ContainsKey(type.JsonName)) return builtInTypes[type.JsonName].FromJson;
-      else return "GetObject";
-    }
-    public string JsonObjectMethod(Parameter property)
-    {
-      var cppwinrtType = property.Schema.JsonName;
-      if (builtInTypes.ContainsKey(cppwinrtType)) return builtInTypes[cppwinrtType].Get;
-      else if (property.Schema.IsArray) return "GetNamedArray";
-      else return "GetNamedObject";
-    }
+        public string GetFromJsonMethodName(CppWinRTType type)
+        {
+            if (builtInTypes.ContainsKey(type.JsonName)) return builtInTypes[type.JsonName].FromJson;
+            else return "GetObject";
+        }
+        public string JsonObjectMethod(Parameter property)
+        {
+            var cppwinrtType = property.Schema.JsonName;
+            if (builtInTypes.ContainsKey(cppwinrtType)) return builtInTypes[cppwinrtType].Get;
+            else if (property.Schema.IsArray) return "GetNamedArray";
+            else return "GetNamedObject";
+        }
 
 
-    public string ConstructJsonRequestPayload(Path path)
-    {
-      var parameters = path.RequestBody?.Properties.Select(p => $"\"{p.Name}\": {{}}");
-      if (parameters == null || parameters.Count() == 0) return "{{ }}";
-      var template = string.Join(",\n", parameters);
-      var variables = string.Join(", ", path.RequestBody.Properties.Select(p => p.Name));
-      
-      return $"LR\"{{\n{template}\n}}\", {variables}";
-    }
+        public string ConstructJsonRequestPayload(Path path)
+        {
+            var parameters = path.RequestBody?.Properties.Select(p => $"\"{p.Name}\": {{}}");
+            if (parameters == null || parameters.Count() == 0) return "{{ }}";
+            var template = string.Join(",\n", parameters);
+            var variables = string.Join(", ", path.RequestBody.Properties.Select(p => p.Name));
 
-    internal CppWinRTType CreateType(string @namespace, string typeName, JsonObject typeDef)
-    {
-      var type = new CppWinRTType
-      {
-        JsonName = typeName,
-        CppWinRTName = typeName,
-        IsBuiltIn = false,
-        Namespace = @namespace,
-      };
-      type.Members.AddRange(typeDef.Select(p => new Parameter
-      {
-        Name = p.Key,
-        // TODO: openapi schema may not have type definition
-        Schema = LookupType(/*p.Value["type"]!.ToString()!*/ "string"),
-      }));
-      types[typeName] = type;
-      return type;
-    }
+            return $"LR\"{{\n{template}\n}}\", {variables}";
+        }
 
-    string GetPathCppName(Path path)
-    {
-      if (path.OperationId != null) return path.OperationId.ToCamelCase();
-      var cppName = path.GetCppName(false);
-      if (Paths.Where(p => p.GetCppName(false) == cppName).Count() > 1)
-      {
-        return path.GetCppName(true);
-      }
-      return cppName;
+        internal CppWinRTType CreateType(string @namespace, string typeName, JsonObject typeDef)
+        {
+            var type = new CppWinRTType
+            {
+                JsonName = typeName,
+                CppWinRTName = typeName,
+                IsBuiltIn = false,
+                Namespace = @namespace,
+            };
+            type.Members.AddRange(typeDef.Select(p => new Parameter
+            {
+                Name = p.Key,
+                // TODO: openapi schema may not have type definition
+                Schema = LookupType(/*p.Value["type"]!.ToString()!*/ "string"),
+            }));
+            AddType(type);
+            return type;
+        }
+
+        string GetPathCppName(Path path)
+        {
+            var name = string.Empty;
+
+            if (path.OperationId != null)
+            {
+                name = path.OperationId.ToCamelCase();
+            }
+            else
+            {
+                var cppName = path.GetCppName(false);
+                if (Paths.Where(p => p.GetCppName(false) == cppName).Count() > 1)
+                {
+                    name = path.GetCppName(true);
+                }
+                else
+                {
+                    name = cppName;
+                }
+            }
+            return name + "Async";
+        }
+
     }
-  }
 }
 
 public static class StringExtensions

@@ -1,16 +1,19 @@
 ﻿#include "pch.h"
 #include "MainPage.h"
 #include "MainPage.g.cpp"
+/*
 #include <winrt/builders/Windows.UI.Xaml.Controls.Button.h>
 #include <winrt/builders/Windows.UI.Xaml.Controls.StackPanel.h>
 #include <winrt/builders/Windows.UI.Xaml.Application.h>
+*/
 #include <winrt/builders/RuntimeComponent1.Class.h>
 #include <winrt/formatters/RuntimeComponent1.MyEnum.h>
 #include <winrt/builders/helpers.h>
 #include <iostream>
 #include <winrt/Windows.UI.Xaml.Media.h>
 #include <type_traits>
-#include <winrt/openapi/PluginIngestionAPI.h>
+
+#include <winrt/Windows.Web.Http.Headers.h>
 #include <winrt/openapi/SwaggerPetstore-OpenAPI3.0.h>
 #include <winrt/Windows.Data.Json.h>
 
@@ -129,7 +132,7 @@ namespace winrt::WinRTBuilderSample::implementation
         auto boringButton = Controls::Button();
         boringButton.Content(winrt::box_value(L"'Sup"));
 
-        // CppWinRT.Builders style!
+/*        // CppWinRT.Builders style!
         auto coolPanel = Controls::builders::StackPanel()
           .Width(400)
           .Height(40)
@@ -137,7 +140,7 @@ namespace winrt::WinRTBuilderSample::implementation
               Controls::builders::Button()
               .Content(winrt::box_value(L"'Sup!"))
             });
-        
+  */      
     }
 
     int32_t MainPage::MyProperty()
@@ -173,7 +176,8 @@ namespace winrt::WinRTBuilderSample::implementation
       myButton().Content(box_value(strFoo));
 
       {
-        using namespace winrt::OpenApi;
+        using namespace winrt::OpenApi::SwaggerPetstoreOpenAPI30;
+        /*
         struct FakeHttpClient {
           HttpStatusCode ResponseStatusCode{};
           ServerEnvironment Environment{};
@@ -244,8 +248,21 @@ namespace winrt::WinRTBuilderSample::implementation
         catch (...) {
           assert(false);
         }
+        */
 
-        auto user = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::UserGetAsync(L"foo");
+        
+        auto inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync();
+
+        for (auto const& [k, v] : inventory) {
+          std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
+        }
+
+        auto oauth = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Petstore_auth(L"petstore_auth");
+        inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync(oauth);
+        for (auto const& [k, v] : inventory) {
+            std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
+        }
+
       }
     }
 }
