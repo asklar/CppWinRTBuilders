@@ -14,7 +14,7 @@ struct <#= _scheme.CppType #> {
     std::wstring _key;
     
 
-  void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& client) const
+  void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
   {
         if (_key.empty())
         {
@@ -48,7 +48,7 @@ struct <#= _scheme.CppType #> {
     <#= oauth2Scheme.CppType #> (std::wstring_view token) : _token(token) {}
     std::wstring _token;
 
-    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& client) const
+    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
     {
         request.Headers().Append(L"Authorization", L"Bearer " + _token);
     }

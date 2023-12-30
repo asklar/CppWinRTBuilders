@@ -638,7 +638,7 @@ namespace CppWinRT.OpenApi
 
             if (path.Security != null && path.Security.Length > 0)
             {
-                Debug.Assert(path.Security.Length == 1);
+                //Debug.Assert(path.Security.Length == 1);
                 var securityParams = path.Security.Select(s => "const TSecuritySchema& _security = {}");
                 var one = new string[] { securityParams.First() };
                 paramDefs = paramDefs.Concat(one);
@@ -656,8 +656,15 @@ namespace CppWinRT.OpenApi
             // extract the value enclosed by braces from the regex matches
             var pathVariables = regex.Matches(template).Select(m => m.Value[1..^1]);
             var pathTemplate = regex.Replace(template, "{}");
-            var comma = pathVariables.Count() > 0 ? ", " : string.Empty;
-            return $"LR\"({{}}{pathTemplate})\", serverUri{comma}{string.Join(", ", pathVariables)}";
+            
+            var queryVariables = path.Parameters.Where(p => p.In == "query").Select(p => p.Name);
+            var queryTemplate = string.Join("&", queryVariables.Select(v => $"{v}={{}}"));
+            if (queryTemplate != string.Empty) queryTemplate = "?" + queryTemplate;
+
+            var variables = string.Join(", ", pathVariables.Concat(queryVariables));
+            var comma = variables.Count() > 0 ? ", " : string.Empty;
+
+            return $"LR\"({{}}{pathTemplate}{queryTemplate})\", serverUri{comma}{variables}";
         }
         struct BuiltInType
         {

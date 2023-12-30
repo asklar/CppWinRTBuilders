@@ -165,7 +165,7 @@ namespace winrt::WinRTBuilderSample::implementation
       
       constexpr auto cParsedFoo = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(L"Foo");
       constexpr auto cParsedFoo2 = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(cStrFoo);
-
+      UNREFERENCED_PARAMETER(cParsedFoo);
       static_assert(cFoo == cParsedFoo2);
 
       auto y = winrt::from_string<winrt::RuntimeComponent1::MyEnum>(strFoo);
@@ -258,18 +258,31 @@ namespace winrt::WinRTBuilderSample::implementation
             for (auto const& [k, v] : inventory) {
                 std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
             }
-
             auto oauth = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Petstore_auth(L"the_petstore_auth_token");
+            /*
             inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync(oauth);
             for (auto const& [k, v] : inventory) {
                 std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;
             }
+            */
+
+            winrt::OpenApi::SwaggerPetstoreOpenAPI30::Pet pet;
+            auto available_pets = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::FindPetsByStatusAsync(L"available", oauth);
+            auto first = available_pets[0];
+            static_assert(std::is_same_v<decltype(first), winrt::OpenApi::SwaggerPetstoreOpenAPI30::Pet>);
 
             auto order = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Order();
             order.id = 10;
-            order.petId = 198772;
-            order.quantity = 7;
+            order.petId = first.id;
+            order.quantity = 1;
+
+            order.status = L"placed";
+          
             auto order2 = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::PlaceOrderAsync(order);
+            assert(order2.id == order.id);
+
+            auto deleted = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::DeleteOrderAsync(order2.id);
+            assert(deleted);
         }
         catch (winrt::hresult_error const& e) {
             std::wcout << e.message().c_str() << std::endl;

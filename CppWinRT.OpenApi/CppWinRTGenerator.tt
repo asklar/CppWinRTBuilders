@@ -79,6 +79,13 @@ struct <#= newType.Value.CppWinRTName.ToCamelCase() #>
     var getFromJsonMethodName = GetFromJsonMethodName(elementType);
 #>
   std::vector<<#= elementTypeCppWinRT #>> items;
+  auto& operator[](size_t index) { return items[index]; }
+  const auto& operator[](size_t index) const { return items[index]; }
+  auto empty() const { return items.empty(); }
+  auto size() const { return items.size(); }
+  void clear() { items.clear(); }
+
+
   <#= newType.Value.CppWinRTName.ToCamelCase() #>(const winrt::Windows::Data::Json::JsonArray& json)
   {
     for (const auto& e : json)
@@ -187,16 +194,30 @@ wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path
   }
 
 <# if (path.ResponseType.IsArray) { #>
-  auto responseJson = winrt::Windows::Data::Json::JsonArray::Parse(responseContent);
+  winrt::Windows::Data::Json::JsonArray responseJson;
+  if (winrt::Windows::Data::Json::JsonArray::TryParse(responseContent, responseJson))
+  {
 <# } else { #>
-  auto responseJson = winrt::Windows::Data::Json::JsonObject::Parse(responseContent);
+  winrt::Windows::Data::Json::JsonObject responseJson;
+  if (winrt::Windows::Data::Json::JsonObject::TryParse(responseContent, responseJson))
+  {
 <# } 
 	if (path.ResponseType.JsonName == "null") { #>
-  co_return responseJson;
+      co_return responseJson;
 <# } else { #>
-  // parse the json as <#= path.ResponseType.CppWinRTName #>
-  co_return <#= path.ResponseType.CppWinRTFullName #>{responseJson};
+      // parse the json as <#= path.ResponseType.CppWinRTName #>
+      co_return <#= path.ResponseType.CppWinRTFullName #>{responseJson};
 <# } #>
+  }
+  else
+  {
+<# if (path.ResponseType.JsonName == "null") { #>
+    responseJson.Insert(L"result", winrt::Windows::Data::Json::JsonValue::CreateStringValue(responseContent));
+    co_return responseJson;
+<# } else { #>
+	throw winrt::hresult_error(E_FAIL, L"Failed to parse response as JSON");
+<# } #>
+  }
 }
 
 <#= path.DoxygenComment #>

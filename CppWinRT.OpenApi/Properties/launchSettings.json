@@ -2,7 +2,7 @@
   "profiles": {
     "CppWinRT.OpenApi": {
       "commandName": "Project",
-      "commandLineArgs": "-in:https://petstore3.swagger.io/api/v3/openapi.json -o:\"C:\\users\\asklar\\source\\repos\\CppWinRTBuilderCodegen\\WinRTBuilderSample\\Generated Files\""
+      "commandLineArgs": "-in:http://localhost:8080/api/v3/openapi.json -o:\"D:\\source\\\\CppWinRTBuilders\\WinRTBuilderSample\\Generated Files\""
     }
   }
 }
