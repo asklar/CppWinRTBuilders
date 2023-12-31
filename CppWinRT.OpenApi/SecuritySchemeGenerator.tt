@@ -6,16 +6,15 @@
 
 
 struct <#= _scheme.CppType #> {
-  static constexpr std::wstring_view scheme_type = L"<#= _scheme.Type #>";
+    static constexpr std::wstring_view scheme_type = L"<#= _scheme.Type #>";
 
 <# if (_scheme is ApiKeySecurityScheme apiKeyScheme) { #>
     <#= apiKeyScheme.CppType #>(std::wstring_view key) : _key(key) {}
     <#= apiKeyScheme.CppType #>() = default;
     std::wstring _key;
-    
 
-  void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
-  {
+    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
+    {
         if (_key.empty())
         {
             return;
@@ -33,7 +32,7 @@ struct <#= _scheme.CppType #> {
         uri.Query(query);
         request.RequestUri(uri);
 <# } #>
-  }
+    }
 <# } else if (_scheme is HttpSecurityScheme httpScheme) { #>
     <#= httpScheme.CppType #> (std::wstring_view username, std::wstring_view password) : _username(username), _password(password) {}
     std::wstring _username;
@@ -53,5 +52,4 @@ struct <#= _scheme.CppType #> {
         request.Headers().Append(L"Authorization", L"Bearer " + _token);
     }
 <# } #>
-
 };

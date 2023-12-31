@@ -18,7 +18,7 @@ namespace CppWinRT.OpenApi
     /// Class to produce the template output
     /// </summary>
     
-    #line 1 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+    #line 1 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.TextTemplating", "17.0.0.0")]
     public partial class SecuritySchemeGenerator : SecuritySchemeGeneratorBase
     {
@@ -30,66 +30,65 @@ namespace CppWinRT.OpenApi
         {
             this.Write("\r\n\r\nstruct ");
             
-            #line 8 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 8 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_scheme.CppType));
             
             #line default
             #line hidden
-            this.Write(" {\r\n  static constexpr std::wstring_view scheme_type = L\"");
+            this.Write(" {\r\n    static constexpr std::wstring_view scheme_type = L\"");
             
-            #line 9 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 9 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(_scheme.Type));
             
             #line default
             #line hidden
             this.Write("\";\r\n\r\n");
             
-            #line 11 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 11 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
  if (_scheme is ApiKeySecurityScheme apiKeyScheme) { 
             
             #line default
             #line hidden
             this.Write("    ");
             
-            #line 12 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 12 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiKeyScheme.CppType));
             
             #line default
             #line hidden
             this.Write("(std::wstring_view key) : _key(key) {}\r\n    ");
             
-            #line 13 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 13 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiKeyScheme.CppType));
             
             #line default
             #line hidden
             this.Write(@"() = default;
     std::wstring _key;
-    
 
-  void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
-  {
+    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
+    {
         if (_key.empty())
         {
             return;
         }
 ");
             
-            #line 23 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 22 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
  if (apiKeyScheme.In == "header") { 
             
             #line default
             #line hidden
             this.Write("        request.Headers().Append(L\"");
             
-            #line 24 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 23 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiKeyScheme.Name));
             
             #line default
             #line hidden
             this.Write("\", _key);\r\n");
             
-            #line 25 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 24 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
  } else if (apiKeyScheme.In == "query") { 
             
             #line default
@@ -97,49 +96,49 @@ namespace CppWinRT.OpenApi
             this.Write("        auto uri = request.RequestUri();\r\n        auto query = uri.Query();\r\n    " +
                     "    if (query.empty()) {\r\n            query = L\"?");
             
-            #line 29 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 28 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiKeyScheme.Name));
             
             #line default
             #line hidden
             this.Write("=");
             
-            #line 29 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 28 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiKeyScheme.Name));
             
             #line default
             #line hidden
             this.Write("\";\r\n        } else {\r\n            query += L\"&");
             
-            #line 31 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 30 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiKeyScheme.Name));
             
             #line default
             #line hidden
             this.Write("=");
             
-            #line 31 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 30 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(apiKeyScheme.Name));
             
             #line default
             #line hidden
             this.Write("\";\r\n        }\r\n        uri.Query(query);\r\n        request.RequestUri(uri);\r\n");
             
-            #line 35 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 34 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
  } 
             
             #line default
             #line hidden
-            this.Write("  }\r\n");
+            this.Write("    }\r\n");
             
-            #line 37 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 36 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
  } else if (_scheme is HttpSecurityScheme httpScheme) { 
             
             #line default
             #line hidden
             this.Write("    ");
             
-            #line 38 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 37 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(httpScheme.CppType));
             
             #line default
@@ -152,7 +151,7 @@ namespace CppWinRT.OpenApi
     {
         auto credentials = winrt::Windows::Security::Credentials::PasswordCredential(L""");
             
-            #line 44 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 43 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(httpScheme.Resource));
             
             #line default
@@ -161,14 +160,14 @@ namespace CppWinRT.OpenApi
                     "inrt::Windows::Web::Http::Headers::HttpCredentialsHeaderValue(credentials));\r\n  " +
                     "  }\r\n");
             
-            #line 47 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 46 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
  } else if (_scheme is OAuth2SecurityScheme oauth2Scheme) { 
             
             #line default
             #line hidden
             this.Write("    ");
             
-            #line 48 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 47 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(oauth2Scheme.CppType));
             
             #line default
@@ -182,12 +181,12 @@ namespace CppWinRT.OpenApi
     }
 ");
             
-            #line 55 "D:\source\CppWinRTBuilders\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
+            #line 54 "C:\Users\asklar\source\repos\CppWinRTBuilderCodeGen\CppWinRT.OpenApi\SecuritySchemeGenerator.tt"
  } 
             
             #line default
             #line hidden
-            this.Write("\r\n};");
+            this.Write("};");
             return this.GenerationEnvironment.ToString();
         }
     }

@@ -523,12 +523,6 @@ namespace CppWinRT.OpenApi
             return string.Empty;
         }
 
-        public string GetBuiltInCppWinRTTypeName(string name)
-        {
-            if (builtInTypes.ContainsKey(name)) return builtInTypes[name].CppName;
-            return string.Empty;
-        }
-
         public CppWinRTType GetArrayElementType(CppWinRTType type)
         {
             if (!type.IsArray) throw new ArgumentException("Type is not an array");
@@ -609,14 +603,14 @@ namespace CppWinRT.OpenApi
         private CppWinRTType LookupType(string typeName)
         {
             if (types.ContainsKey(typeName)) return types[typeName];
-            var cppwinrtType = GetBuiltInCppWinRTTypeName(typeName);
-            if (cppwinrtType != string.Empty)
-            {
+            if (builtInTypes.ContainsKey(typeName)) {
+                var cppwinrtType = builtInTypes[typeName];
                 var type = new CppWinRTType
                 {
                     JsonName = typeName,
-                    CppWinRTName = cppwinrtType,
-                    IsBuiltIn = true
+                    CppWinRTName = cppwinrtType.CppName,
+                    IsBuiltIn = true,
+                    Namespace = cppwinrtType.Namespace,
                 };
                 AddType(type);
 
@@ -661,10 +655,17 @@ namespace CppWinRT.OpenApi
             var queryTemplate = string.Join("&", queryVariables.Select(v => $"{v}={{}}"));
             if (queryTemplate != string.Empty) queryTemplate = "?" + queryTemplate;
 
-            var variables = string.Join(", ", pathVariables.Concat(queryVariables));
-            var comma = variables.Count() > 0 ? ", " : string.Empty;
+            var allVariables = pathVariables.Concat(queryVariables);
+            var std_format_variables = allVariables.Select(v => {
+                var schema = path.Parameters.Where(p => v == p.Name).Select(p => p.Schema);
+                Debug.Assert(schema.Count() == 1);
+                if (schema.First().JsonName == "string") return $"winrt::Windows::Foundation::Uri::EscapeComponent({v})";
+                else return v;
+            });
+            var list_of_variables = string.Join(", ", std_format_variables);
+            var comma = std_format_variables.Count() > 0 ? ", " : string.Empty;
 
-            return $"LR\"({{}}{pathTemplate}{queryTemplate})\", serverUri{comma}{variables}";
+            return $"LR\"({{}}{pathTemplate}{queryTemplate})\", serverUri{comma}{list_of_variables}";
         }
         struct BuiltInType
         {
@@ -678,7 +679,7 @@ namespace CppWinRT.OpenApi
 
         Dictionary<string, BuiltInType> builtInTypes = new()
     {
-      { "string", new BuiltInType{ Get = "GetNamedString", Set = "CreateStringValue", CppName="hstring", Namespace="winrt", FromJson="GetString" } },
+      { "string", new BuiltInType{ Get = "GetNamedString", Set = "CreateStringValue", CppName="wstring", Namespace="std", FromJson="GetString" } },
       { "integer", new BuiltInType { Get = "GetNamedNumber", Set = "CreateNumberValue", CppName = "int32_t", CastFromJson = "static_cast<int32_t>", FromJson = "GetNumber" } },
       { "number", new BuiltInType { Get = "GetNamedNumber", Set = "CreateNumberValue", CppName = "double", FromJson = "GetNumber" } },
       { "boolean", new BuiltInType { Get = "GetNamedBoolean", Set = "CreateBooleanValue", CppName= "bool", FromJson = "GetBoolean" } },
