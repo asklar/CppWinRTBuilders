@@ -67,8 +67,10 @@ struct <#= newType.Value.CppWinRTName.ToCamelCase() #>
 <# if (!newType.Value.IsArray) { #>
     <#= newType.Value.CppWinRTName.ToCamelCase() #>(const winrt::Windows::Data::Json::JsonObject& json)
     {
-<# foreach (var property in newType.Value.Members) { #>
+<# foreach (var property in newType.Value.Members) {
+     if (!property.Required) { #>
         if (json.HasKey(L"<#= property.Name #>"))
+<#   } #>
         {
             <#= property.Name #> = <#= GetCppCast(property.Schema.JsonName) #>(json.<#= JsonObjectMethod(property) #>(L"<#= property.Name #>"));
         }

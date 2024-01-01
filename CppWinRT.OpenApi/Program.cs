@@ -575,11 +575,13 @@ namespace CppWinRT.OpenApi
                 var typeName = refPath.Split('/').Last();
                 if (types.ContainsKey(typeName)) return types[typeName];
                 var typeDef = universe["components"]!["schemas"]![typeName]!.AsObject();
+                var required = typeDef["required"]?.AsArray() ?? new JsonArray();
                 var properties = typeDef["properties"]!.AsObject();
                 var members = properties.Select(p => new CppWinRT.OpenApi.Parameter
                 {
                     Name = p.Key,
                     Schema = ResolveType(p.Value.AsObject(), universe),
+                    Required = required.Contains(p.Key),
                 }).ToList();
                 var type = new CppWinRTType
                 {
