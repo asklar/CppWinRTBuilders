@@ -34,6 +34,29 @@ App::App()
 #endif
 }
 
+
+void App::OnActivated(Windows::ApplicationModel::Activation::IActivatedEventArgs const& args)
+{
+    if (args.Kind() == ActivationKind::Protocol)
+    {
+        auto protocolArgs = args.try_as<ProtocolActivatedEventArgs>();
+        if (protocolArgs)
+        {
+            auto qp = protocolArgs.Uri().QueryParsed();
+            auto code = qp.GetFirstValueByName(L"code");
+            winrt::hstring state;
+            for (const auto& pair : qp)
+            {
+                if (pair.Name() == L"state")
+                {
+                    state = pair.Value();
+                }
+            }
+            OAuthCodeReceived(code, state);
+        }
+    }
+}
+
 /// <summary>
 /// Invoked when the application is launched normally by the end user.  Other entry points
 /// will be used such as when the application is launched to open a specific file.

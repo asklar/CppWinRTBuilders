@@ -16,8 +16,12 @@
 #include <winrt/Windows.Web.Http.Headers.h>
 #include <winrt/openapi/SwaggerPetstore-OpenAPI3.0.h>
 #include <winrt/Windows.Data.Json.h>
-
-#include <winrt/openapi/ArtInstitutionOfChicagoAPI.h>
+#include <format>
+#include <numeric>
+#include <winrt/Windows.System.h>
+#include <winrt/Windows.ApplicationModel.Activation.h>
+#include "App.h"
+#include <wil/cppwinrt_helpers.h>
 
 using namespace winrt;
 using namespace Windows::UI::Xaml;
@@ -182,10 +186,6 @@ namespace winrt::WinRTBuilderSample::implementation
 
         try {
             {
-                auto api = winrt::OpenApi::ArtInstitutionOfChicagoAPI::Api();
-                auto artists = co_await api.ArtistsAsync();
-            }
-            {
                 auto api = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api();
                 auto mockInventoryClient = winrt::OpenApi::SwaggerPetstoreOpenAPI30::FunctorHttpClient([]() {
                     auto json = JsonObject();
@@ -198,8 +198,49 @@ namespace winrt::WinRTBuilderSample::implementation
                 auto mockApi = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api(mockInventoryClient);
                 auto mockInventory = co_await mockApi.GetInventoryAsync();
 
+            }
 
+            {
+                auto oauth = std::make_shared<winrt::OpenApi::SwaggerPetstoreOpenAPI30::SimpleOAuth>();
+                std::wstring _clientId = L"6d2f8c9e11c9f3910808";
+                std::wstring_view _clientSecret = L"354970a6e9d3b420115eef0dc81fb03aca64cd44";
+                auto _githubAuth = L"https://github.com/login/oauth/authorize";
+                std::wstring_view _githubToken = L"https://github.com/login/oauth/access_token";
+                std::wstring _redirectUri = L"winrtbuildersample://oauth";
+                std::vector<std::wstring> _scopes = { L"user" };
+
+                oauth->AuthorizationUrl = _githubAuth;
+                oauth->TokenUrl = _githubToken;
+                oauth->ClientId = _clientId;
+                oauth->ClientSecret = _clientSecret;
+                oauth->RedirectUri = _redirectUri;
+
+                GUID guid;
+                CoCreateGuid(&guid);
+                wchar_t guidStr[40];
+                StringFromGUID2(guid, guidStr, static_cast<int>(std::size(guidStr)));
+
+
+                std::unordered_map<std::wstring, std::shared_ptr<SimpleOAuth>> _oauthMap;
+                _oauthMap[guidStr] = oauth;
+
+                auto evtToken = winrt::WinRTBuilderSample::implementation::App::OAuthCodeReceived.add([&_oauthMap](auto&& code, auto&& state) {
+                    auto oauth = _oauthMap[state.c_str()];
+                    oauth->OnReceivedCode(code);
+                    });
+
+                auto result = co_await oauth->Authenticate(_scopes, guidStr);
+                winrt::WinRTBuilderSample::implementation::App::OAuthCodeReceived.remove(evtToken);
+
+                auto code = result.AccessToken;
+                auto valid = result.IsValid();
+                UNREFERENCED_PARAMETER(valid);
+                myButton().Content(box_value(code));
+            }
+
+            {
                 auto apikey = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api_key(L"special-key");
+                auto api = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api();
                 auto inventory = co_await api.GetInventoryAsync(apikey);
 
                 for (auto const& [k, v] : inventory) {
