@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -12,43 +10,43 @@ var preferredServer = string.Empty;
 
 foreach (var arg in args)
 {
-  if (arg.StartsWith("-o:"))
-  {
-    outFolder = arg.Substring(3);
-  }
-  else if (arg.StartsWith("-out:"))
-  {
-    outFolder = arg.Substring(5);
-  }
-  else if (arg.StartsWith("-i:"))
-  {
-    openApiPath = arg.Substring(3);
-  }
-  else if (arg.StartsWith("-in:"))
-  {
-    openApiPath = arg.Substring(4);
-  }
-  else if (arg.StartsWith("-s:"))
-  {
-    preferredServer = arg.Substring(3);
-  }
-  else if (arg.StartsWith("-server:"))
-  {
-    preferredServer = arg.Substring(8);
-  }
-  else
-  {
-    throw new ArgumentException($"Unknown argument {arg}");
-  }
+    if (arg.StartsWith("-o:"))
+    {
+        outFolder = arg.Substring(3);
+    }
+    else if (arg.StartsWith("-out:"))
+    {
+        outFolder = arg.Substring(5);
+    }
+    else if (arg.StartsWith("-i:"))
+    {
+        openApiPath = arg.Substring(3);
+    }
+    else if (arg.StartsWith("-in:"))
+    {
+        openApiPath = arg.Substring(4);
+    }
+    else if (arg.StartsWith("-s:"))
+    {
+        preferredServer = arg.Substring(3);
+    }
+    else if (arg.StartsWith("-server:"))
+    {
+        preferredServer = arg.Substring(8);
+    }
+    else
+    {
+        throw new ArgumentException($"Unknown argument {arg}");
+    }
 }
 
 if (outFolder == string.Empty)
 {
-  throw new ArgumentException("Output folder cannot be empty, specify -o:");
+    throw new ArgumentException("Output folder cannot be empty, specify -o:");
 }
 else if (openApiPath == string.Empty)
 {
-  throw new ArgumentException("OpenApi file path cannot be empty, specify -in:");
+    throw new ArgumentException("OpenApi file path cannot be empty, specify -in:");
 }
 
 // determine whether openApiPath is a url or a file path
@@ -56,24 +54,24 @@ string inputSpec = string.Empty;
 string specificationUrl = string.Empty;
 if (openApiPath.StartsWith("http://") || openApiPath.StartsWith("https://"))
 {
-  using (var client = new System.Net.Http.HttpClient())
-  {
-    inputSpec = await client.GetStringAsync(openApiPath);
-    specificationUrl = openApiPath;
-  }
+    using (var client = new System.Net.Http.HttpClient())
+    {
+        inputSpec = await client.GetStringAsync(openApiPath);
+        specificationUrl = openApiPath;
+    }
 }
 else
 {
-  inputSpec = File.ReadAllText(openApiPath);
-  specificationUrl = new Uri(openApiPath).AbsoluteUri;
+    inputSpec = File.ReadAllText(openApiPath);
+    specificationUrl = new Uri(openApiPath).AbsoluteUri;
 }
 
 // inputSpec is either a json or a yaml. If it is a yaml, convert it to json
 if (openApiPath.EndsWith(".yaml") || openApiPath.EndsWith(".yml"))
 {
-  var yaml = new YamlDotNet.Serialization.DeserializerBuilder().Build();
-  var yamlObject = yaml.Deserialize(new StringReader(inputSpec));
-  inputSpec = JsonSerializer.Serialize(yamlObject);
+    var yaml = new YamlDotNet.Serialization.DeserializerBuilder().Build();
+    var yamlObject = yaml.Deserialize(new StringReader(inputSpec));
+    inputSpec = JsonSerializer.Serialize(yamlObject);
 }
 
 var json = JsonSerializer.Deserialize<JsonObject>(inputSpec)!;
@@ -83,41 +81,49 @@ var version = json["info"]!["version"]!.ToString();
 var Namespace = title.MakeCppIdentifier();
 var generator = new CppWinRT.OpenApi.CppWinRTGenerator
 {
-  Title = title,
-  Version = version,
-  SpecificationUrl = specificationUrl,
-  OpenApiPath = openApiPath,
-  Namespace = Namespace,
+    Title = title,
+    Version = version,
+    SpecificationUrl = specificationUrl,
+    OpenApiPath = openApiPath,
+    ApiName = Namespace,
 };
 
 // select a server
-var servers = json["servers"]!.AsArray();
+var servers = json["servers"]?.AsArray() ?? new JsonArray();
+if (servers.Count() == 0)
+{
+    var server = new JsonObject();
+    server["url"] = json["host"]!.ToString();
+    servers.Add(server);
+}
 foreach (var server in servers)
 {
-  var url = server!["url"]!.ToString().Trim();
-  // if it is a relative url, make it absolute by using the openApiPath as the base
-  if (url.StartsWith('/'))
-  {
-    var uri = new Uri(specificationUrl);
-    url = new Uri(uri, url).AbsoluteUri;
-  }
-  var description = (server["description"]?.ToString() ?? "_NoName").Trim();
-  generator.Servers.Add(description, url);
+    var url = server!["url"]!.ToString().Trim();
+    // if it is a relative url, make it absolute by using the openApiPath as the base
+    if (url.StartsWith('/'))
+    {
+        var uri = new Uri(specificationUrl);
+        url = new Uri(uri, url).AbsoluteUri;
+    }
+    var description = (server["description"]?.ToString() ?? "_NoName").Trim();
+    generator.Servers.Add(description, url);
 }
 
 if (preferredServer != string.Empty)
 {
-  generator.ServerUri = generator.Servers[preferredServer];
+    generator.ServerUri = generator.Servers[preferredServer];
 }
 else
 {
-  var server = generator.Servers.First();
-  Console.WriteLine($"Using default server: {server.Key} ({server.Value})");
-  Console.WriteLine("Use -s: or -server: to specify a different server");
-  generator.ServerDescription = server.Key;
-  generator.ServerUri = server.Value;
+    var server = generator.Servers.First();
+    Console.WriteLine($"Using default server: {server.Key} ({server.Value})");
+    Console.WriteLine("Use -s: or -server: to specify a different server");
+    generator.ServerDescription = server.Key;
+    generator.ServerUri = server.Value;
 }
 
+// TODO: the security schemes should only be created as we find them referenced by security entries
+// and not hardcode them to be in the components section
 var securitySchemes = json["components"]?["securitySchemes"]?.AsObject();
 if (securitySchemes != null)
 {
@@ -189,116 +195,143 @@ var defaultSecurity = json["security"]?.AsArray();
 var paths = json["paths"]!.AsObject();
 foreach (var path in paths)
 {
-  var pathName = path.Key;
-  var pathValue = path.Value;
-  foreach (var method in pathValue!.AsObject().AsEnumerable())
-  {
-    var methodName = method.Key;
-    var methodValue = method.Value;
-    var operationId = methodValue["operationId"]?.ToString();
-    var summary = methodValue["summary"]?.ToString().Trim();
-    var description = methodValue["description"]?.ToString().Trim();
-    var parameters = methodValue["parameters"]?.AsArray() ?? new JsonArray();
-    var requestBody = methodValue["requestBody"]?.AsObject();
-    var responses = methodValue["responses"]?.AsObject();
-    var tags = methodValue["tags"]?.AsArray();
-    var securityEntries = methodValue["security"]?.AsArray() ?? defaultSecurity;
+    var pathName = path.Key;
+    var pathValue = path.Value;
+    foreach (var method in pathValue!.AsObject().AsEnumerable())
+    {
+        var methodName = method.Key;
+        var methodValue = method.Value;
+        var operationId = methodValue["operationId"]?.ToString();
+        var summary = methodValue["summary"]?.ToString().Trim();
+        var description = methodValue["description"]?.ToString().Trim();
+        var parameters = methodValue["parameters"]?.AsArray() ?? new JsonArray();
+        var requestBody = methodValue["requestBody"]?.AsObject();
+        var responses = methodValue["responses"]?.AsObject();
+        var tags = methodValue["tags"]?.AsArray();
+        var securityEntries = methodValue["security"]?.AsArray() ?? defaultSecurity;
 
-    var fnSecuritySchemes = securityEntries?.SelectMany(s => s!.AsObject()!.Select(security => generator.Security[security.Key])).ToArray();
-    var pathObject = new CppWinRT.OpenApi.Path
-    {
-      PathUriTemplate = pathName,
-      Method = methodName.ToCamelCase(), // convert put to Put
-      OperationId = operationId,
-      Summary = summary,
-      Description = description,
-      Tags = tags?.Select(x => x!.ToString()).ToArray(),
-      Security = fnSecuritySchemes,
-    };
-    foreach (var parameter in parameters)
-    {
-      var parameterObject = new CppWinRT.OpenApi.Parameter
-      {
-        Name = parameter!["name"]!.ToString(),
-        In = parameter["in"]!.ToString(),
-        Description = parameter["description"]?.ToString(),
-        Required = bool.Parse(parameter["required"]?.ToString() ?? "false"),
-        Schema = generator.ResolveType(parameter["schema"]!.AsObject(), json),
-      };
-      pathObject.Parameters.Add(parameterObject);
-    }
-    if (requestBody != null)
-    {
-      pathObject.RequestBody = new CppWinRT.OpenApi.Request
-      {
-        IsRequired = bool.Parse(requestBody!["required"]?.ToString() ?? "false"),
-      };
-      var content = requestBody["content"]!.AsObject()!;
-      var mimeType = content.First();
-      var schema = mimeType.Value!["schema"]!.AsObject();
-      if (schema.ContainsKey("properties"))
-      {
-        var properties = schema["properties"]!.AsObject();
-        var bodyParam = properties.Select(p => new CppWinRT.OpenApi.Parameter
+        var fnSecuritySchemes = securityEntries?.SelectMany(s => s!.AsObject()!.Select(security => generator.Security[security.Key])).ToArray();
+        var pathObject = new CppWinRT.OpenApi.Path
         {
-          Name = p.Key,
-          Schema = generator.ResolveType(p.Value.AsObject(), json),
-        });
-        pathObject.RequestBody.Properties.AddRange(bodyParam);
-      }
-      else if (schema.ContainsKey("$ref"))
-      {
-        var type = generator.ResolveType(schema, json);
-        var bodyParam = new CppWinRT.OpenApi.Parameter
-        {
-          Name = type.JsonName,
-          Schema = type,
+            PathUriTemplate = pathName,
+            Method = methodName.ToCamelCase(), // convert put to Put
+            OperationId = operationId,
+            Summary = summary,
+            Description = description,
+            Tags = tags?.Select(x => x!.ToString()).ToArray(),
+            Security = fnSecuritySchemes,
         };
-        pathObject.RequestBody.Properties.Add(bodyParam);
-      }
-    }
-    if (responses != null)
-    {
-      var response = responses.First()!;
-      var responseEntry = response.Value.AsObject();
-      if (responseEntry.ContainsKey("content"))
-      {
-        var content = responseEntry["content"]!.AsObject()!;
-        var mimeType = content.First();
-        var schema = mimeType.Value!["schema"]!.AsObject();
-        if (schema != null)
+        foreach (var iparameter in parameters)
         {
-          var responseType = generator.ResolveType(schema, json);
-          pathObject.ResponseType = responseType;
+            var parameter = iparameter;
+            var paramObj = parameter!.AsObject();
+            if (paramObj.Count == 1 && paramObj.ContainsKey("$ref"))
+            {
+                var refType = paramObj["$ref"]!.ToString()!;
+                parameter = json.ResolveRef(refType);
+            }
+            var paramName = parameter!["name"]!.ToString();
+            var paramIn = parameter["in"]!.ToString();
+            var paramDescription = parameter["description"]?.ToString() ?? string.Empty;
+            var paramRequired = bool.Parse(parameter["required"]?.ToString() ?? "false");
+            var paramSchema = parameter["schema"]?.AsObject();
+            if (paramSchema == null)
+            {
+                // look for the type
+                var type = parameter["type"]!.ToString();
+                paramSchema = new JsonObject();
+                paramSchema["type"] = type;
+            }
+            var parameterObject = new CppWinRT.OpenApi.Parameter
+            {
+                Name = paramName,
+                In = paramIn,
+                Description = paramDescription,
+                Required = paramRequired,
+                Schema = generator.ResolveType(paramSchema, json),
+            };
+            pathObject.Parameters.Add(parameterObject);
         }
-        else if (mimeType.Value != null)
+        if (requestBody != null)
         {
-          if (mimeType.Value.AsObject().ContainsKey("$ref"))
-          {
-            // TODO: deal with references to schema instead of example
-            var refType = mimeType.Value!["$ref"]!.ToString()!;
-            var typeName = refType.Split('/').Last();
-            var typeDef = json["components"]!["schemas"]![typeName]!.AsObject();
-            pathObject.ResponseType = generator.CreateType(Namespace, typeName, typeDef);
-          }
-          else if (mimeType.Value.AsObject().ContainsKey("example"))
-          {
-            var example = mimeType.Value!["example"]!.AsObject();
-            if (example.Count() != 1) throw new Exception("Only one example is supported");
-            var typeDef = example.First().Value!.AsObject();
-            var typeName = example.First().Key;
-            pathObject.ResponseType = generator.CreateType(Namespace, typeName, typeDef);
-          }
+            pathObject.RequestBody = new CppWinRT.OpenApi.Request
+            {
+                IsRequired = bool.Parse(requestBody!["required"]?.ToString() ?? "false"),
+            };
+            var content = requestBody["content"]!.AsObject()!;
+            var mimeType = content.First();
+            var schema = mimeType.Value!["schema"]!.AsObject();
+            if (schema.ContainsKey("properties"))
+            {
+                var properties = schema["properties"]!.AsObject();
+                var bodyParam = properties.Select(p => new CppWinRT.OpenApi.Parameter
+                {
+                    Name = p.Key,
+                    Schema = generator.ResolveType(p.Value!.AsObject(), json),
+                });
+                pathObject.RequestBody.Properties.AddRange(bodyParam);
+            }
+            else if (schema.ContainsKey("$ref"))
+            {
+                var type = generator.ResolveType(schema, json);
+                var bodyParam = new CppWinRT.OpenApi.Parameter
+                {
+                    Name = type.JsonName,
+                    Schema = type,
+                };
+                pathObject.RequestBody.Properties.Add(bodyParam);
+            }
         }
-      }
+        if (responses != null)
+        {
+            var response = responses.First()!;
+            // TODO: deal with more than one possible response (as a "union" type)
+            var responseEntry = response.Value!.AsObject();
+            if (responseEntry.ContainsKey("schema"))
+            {
+                var schema = responseEntry["schema"]!.AsObject();
+                var responseType = generator.ResolveType(schema, json);
+                pathObject.ResponseType = responseType;
+            }
+            else if (responseEntry.ContainsKey("content"))
+            {
+                var content = responseEntry["content"]!.AsObject()!;
+                var mimeType = content.First();
+                var schema = mimeType.Value!["schema"]!.AsObject();
+                if (schema != null)
+                {
+                    var responseType = generator.ResolveType(schema, json);
+                    pathObject.ResponseType = responseType;
+                }
+                else if (mimeType.Value != null)
+                {
+                    if (mimeType.Value.AsObject().ContainsKey("$ref"))
+                    {
+                        // TODO: deal with references to schema instead of example
+                        var refType = mimeType.Value!["$ref"]!.ToString()!;
+                        var typeName = refType.Split('/').Last();
+                        var jsonNode = json.ResolveRef(refType);
+                        var typeDef = jsonNode!.AsObject();
+                        pathObject.ResponseType = generator.CreateType(Namespace, typeName, typeDef);
+                    }
+                    else if (mimeType.Value.AsObject().ContainsKey("example"))
+                    {
+                        var example = mimeType.Value!["example"]!.AsObject();
+                        if (example.Count() != 1) throw new Exception("Only one example is supported");
+                        var typeDef = example.First().Value!.AsObject();
+                        var typeName = example.First().Key;
+                        pathObject.ResponseType = generator.CreateType(Namespace, typeName, typeDef);
+                    }
+                }
+            }
+        }
+        if (pathObject.ResponseType == null)
+        {
+            pathObject.ResponseType = generator.ResolveType(null, json);
+        }
+        generator.Paths.Add(pathObject);
+        //var servers = methodValue["servers"]!.AsArray();
     }
-    if (pathObject.ResponseType == null)
-    {
-      pathObject.ResponseType = generator.ResolveType(null, json);
-    }
-    generator.Paths.Add(pathObject);
-    //var servers = methodValue["servers"]!.AsArray();
-  }
 }
 
 var output = generator.TransformText();
@@ -309,7 +342,7 @@ var filename = title.Split(' ').Select(x => x.ToCamelCase()).Aggregate((x, y) =>
 // remove all non-filesystem-safe characters
 foreach (var c in System.IO.Path.GetInvalidFileNameChars())
 {
-  filename = filename.Replace(c.ToString(), string.Empty);
+    filename = filename.Replace(c.ToString(), string.Empty);
 }
 
 File.WriteAllText(System.IO.Path.Combine(openApiFolder, filename), output);
@@ -317,71 +350,77 @@ File.WriteAllText(System.IO.Path.Combine(openApiFolder, filename), output);
 
 namespace CppWinRT.OpenApi
 {
-  [DebuggerDisplay("{JsonName} - {CppWinRTName}")]
-  public class CppWinRTType
-  {
-    public string JsonName { get; set; }
-    public string CppWinRTFullName
+    [DebuggerDisplay("{JsonName} - {CppWinRTName}")]
+    public class CppWinRTType
     {
-      get =>
-        $"{(Namespace != null ? Namespace + "::" : "")}{CppWinRTName}";
+        public string JsonName { get; set; }
+        public string CppWinRTFullName
+        {
+            get =>
+              $"{(Namespace != null ? Namespace + "::" : "")}{CppWinRTName}";
+        }
+        public bool IsBuiltIn { get; set; }
+        public List<Parameter> Members { get; set; } = new();
+        public string Namespace { get; internal set; }
+
+        public string CppWinRTName { get; set; }
+        public bool IsArray { get; internal set; }
     }
-    public bool IsBuiltIn { get; set; }
-    public List<Parameter> Members { get; set; } = new();
-    public string Namespace { get; internal set; }
 
-    public string CppWinRTName { get; set; }
-    public bool IsArray { get; internal set; }
-  }
-
-  public class Parameter
-  {
-    public string Name { get; set; }
-    public string In { get; set; }
-    public string Description { get; set; }
-    public bool Required { get; set; }
-    public CppWinRTType Schema { get; set; }
-  }
-
-  public class Request
-  {
-    public bool IsRequired { get; set; }
-    public List<Parameter> Properties { get; set; } = new();
-  }
-
-  public class Path
-  {
-    public string GetResponseTypeCppWinRTCamelCase()
+    public class Parameter
     {
-      return ResponseType.CppWinRTName.ToCamelCase();
+        public string Name { get; set; }
+        public string In { get; set; }
+        public string Description { get; set; }
+        public bool Required { get; set; }
+        public CppWinRTType Schema { get; set; }
     }
-    public string PathUriTemplate { get; set; }
 
-    public string Name
+    public class Request
     {
-      // given a path, return the name of the method
-      get
-      {
-        var firstTemplateParameter = PathUriTemplate.IndexOf('{');
-        string path;
-        if (firstTemplateParameter == -1) path = PathUriTemplate;
-        else path = PathUriTemplate.Substring(0, firstTemplateParameter - 1);
-        
-        var parts = path.Split('/');
-        var lastPart = parts.Last();
-        return lastPart.ToCamelCase();
-      }
+        public bool IsRequired { get; set; }
+        public List<Parameter> Properties { get; set; } = new();
     }
-    public string Method { get; set; }
-    //public string OperationId { get; set; }
-    public string Summary { get; set; }
-    public string Description { get; set; }
-    public string[] Tags { get; set; }
-    public SecurityScheme[] Security { get; set; }
 
-    public string DefaultSecurityCppType =>
-            Security != null && Security.Length > 0 ? Security[0].CppType : "void";
-    public List<Parameter> Parameters { get; } = new();
+    [DebuggerDisplay("{PathUriTemplate} - {Method}")]
+    public class Path
+    {
+        public string GetResponseTypeCppWinRTCamelCase()
+        {
+            return ResponseType.CppWinRTName.ToCamelCase();
+        }
+        public string PathUriTemplate { get; set; }
+
+        public string PathUriWithoutParameters
+        {
+            get
+            {
+                var firstTemplateParameter = PathUriTemplate.IndexOf('{');
+                if (firstTemplateParameter == -1) return PathUriTemplate;
+                return PathUriTemplate.Substring(0, firstTemplateParameter - 1);
+            }
+        }
+        public string Name
+        {
+            // given a path, return the name of the method
+            get
+            {
+                var path = PathUriWithoutParameters;
+                var parts = path.Split('/');
+                var lastPart = parts.Last();
+                return lastPart.ToCamelCase();
+            }
+        }
+        public string Method { get; set; }
+        //public string OperationId { get; set; }
+        public string Summary { get; set; }
+        public string Description { get; set; }
+        public string[] Tags { get; set; }
+        public SecurityScheme[] Security { get; set; }
+
+        public string DefaultSecurityCppType =>
+                Security != null && Security.Length > 0 ? Security[0].CppType : "void";
+        public List<Parameter> Parameters { get; } = new();
 
         public string GetParametersNamesWithHttpClient()
         {
@@ -397,33 +436,33 @@ namespace CppWinRT.OpenApi
             return string.Join(", ", allParams);
         }
 
-    public Request RequestBody;
+        public Request RequestBody;
 
-    public CppWinRTType ResponseType = null;
+        public CppWinRTType ResponseType = null;
 
-    public string GetCppName(bool withMethod)
-    {
-      if (withMethod) return $"{Name.ToCamelCase()}{Method}Async";
-      return $"{Name.ToCamelCase()}Async";
+        public string GetCppName(bool withMethod)
+        {
+            if (withMethod) return $"{Method}{Name.ToCamelCase()}Async";
+            return $"{Name.ToCamelCase()}Async";
+        }
+
+        public string DoxygenComment
+        {
+            get
+            {
+                StringBuilder sb = new();
+                sb.AppendLine("/**");
+                if (!string.IsNullOrEmpty(Summary)) sb.AppendLine($" * @brief {Summary}");
+                if (!string.IsNullOrEmpty(Description)) sb.AppendLine($" * {Description}");
+                if (!string.IsNullOrEmpty(PathUriTemplate)) sb.AppendLine($" * Url path: {PathUriTemplate}");
+                sb.Append(" */");
+                var ret = sb.ToString();
+                return ret;
+            }
+        }
+
+        public string OperationId { get; internal set; }
     }
-
-    public string DoxygenComment
-    {
-      get
-      {
-        StringBuilder sb = new();
-        sb.AppendLine("/**");
-        if (!string.IsNullOrEmpty(Summary)) sb.AppendLine($" * @brief {Summary}");
-        if (!string.IsNullOrEmpty(Description)) sb.AppendLine($" * {Description}");
-        if (!string.IsNullOrEmpty(PathUriTemplate)) sb.AppendLine($" * Url path: {PathUriTemplate}");
-        sb.Append(" */");
-        var ret = sb.ToString();
-        return ret;
-      }
-    }
-
-    public string OperationId { get; internal set; }
-  }
 
     public partial class SecuritySchemeGenerator
     {
@@ -482,9 +521,9 @@ namespace CppWinRT.OpenApi
         public string Title { get; set; }
         public string Version { get; set; }
         public const string OpenApiNamespace = "winrt::OpenApi";
-        public string Namespace { get => OpenApiNamespace + "::" + _namespace; set => _namespace = value; }
+        public string ApiName { get; set; }
 
-        private string _namespace;
+        private string Namespace { get => OpenApiNamespace; }
         public List<Path> Paths = new();
         public string ServerDescription { get; set; }
         public string ServerUri { get; set; }
@@ -558,7 +597,7 @@ namespace CppWinRT.OpenApi
                         JsonName = jsonName,
                         CppWinRTName = $"ArrayOf_{itemType.CppWinRTName}",
                         IsBuiltIn = false,
-                        Namespace = Namespace,
+                        Namespace = ApiName,
                         IsArray = true,
                     };
                     AddType(type);
@@ -574,7 +613,8 @@ namespace CppWinRT.OpenApi
                 var refPath = node["$ref"]!.ToString()!;
                 var typeName = refPath.Split('/').Last();
                 if (types.ContainsKey(typeName)) return types[typeName];
-                var typeDef = universe["components"]!["schemas"]![typeName]!.AsObject();
+                var jsonNode = universe.ResolveRef(refPath);
+                var typeDef = jsonNode.AsObject();
                 var required = typeDef["required"]?.AsArray() ?? new JsonArray();
                 var properties = typeDef["properties"]!.AsObject();
                 var members = properties.Select(p => new CppWinRT.OpenApi.Parameter
@@ -589,7 +629,7 @@ namespace CppWinRT.OpenApi
                     Members = members,
                     CppWinRTName = typeName,
                     IsBuiltIn = false,
-                    Namespace = Namespace,
+                    Namespace = ApiName,
                 };
                 AddType(type);
                 return type;
@@ -605,7 +645,8 @@ namespace CppWinRT.OpenApi
         private CppWinRTType LookupType(string typeName)
         {
             if (types.ContainsKey(typeName)) return types[typeName];
-            if (builtInTypes.ContainsKey(typeName)) {
+            if (builtInTypes.ContainsKey(typeName))
+            {
                 var cppwinrtType = builtInTypes[typeName];
                 var type = new CppWinRTType
                 {
@@ -621,7 +662,7 @@ namespace CppWinRT.OpenApi
             return null;
         }
 
-        public string GetCppWinRTParameters(Path path, bool withHttpClient)
+        public string GetCppWinRTParameters(Path path)
         {
             StringBuilder sb = new();
             var paramDefs = path.Parameters.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
@@ -630,7 +671,6 @@ namespace CppWinRT.OpenApi
                 var bodyParams = path.RequestBody.Properties.Select(p => $"{LookupType(p.Schema.JsonName).CppWinRTFullName} {p.Name}");
                 paramDefs = paramDefs.Concat(bodyParams);
             }
-            if (withHttpClient) paramDefs = new string[] { "std::enable_if_t<details::IsHttpClientIsh_v<THttpClient>, THttpClient> _client" }.Concat(paramDefs);
 
             if (path.Security != null && path.Security.Length > 0)
             {
@@ -652,13 +692,14 @@ namespace CppWinRT.OpenApi
             // extract the value enclosed by braces from the regex matches
             var pathVariables = regex.Matches(template).Select(m => m.Value[1..^1]);
             var pathTemplate = regex.Replace(template, "{}");
-            
+
             var queryVariables = path.Parameters.Where(p => p.In == "query").Select(p => p.Name);
             var queryTemplate = string.Join("&", queryVariables.Select(v => $"{v}={{}}"));
             if (queryTemplate != string.Empty) queryTemplate = "?" + queryTemplate;
 
             var allVariables = pathVariables.Concat(queryVariables);
-            var std_format_variables = allVariables.Select(v => {
+            var std_format_variables = allVariables.Select(v =>
+            {
                 var schema = path.Parameters.Where(p => v == p.Name).Select(p => p.Schema);
                 Debug.Assert(schema.Count() == 1);
                 if (schema.First().JsonName == "string") return $"winrt::Windows::Foundation::Uri::EscapeComponent({v})";
@@ -743,58 +784,78 @@ namespace CppWinRT.OpenApi
 
             if (path.OperationId != null)
             {
-                name = path.OperationId.ToCamelCase();
+                name = path.OperationId.ToCamelCase() + "Async";
             }
             else
             {
                 var cppName = path.GetCppName(false);
-                if (Paths.Where(p => p.GetCppName(false) == cppName).Count() > 1)
+                var conflicts = Paths.Where(p => p != path && p.GetCppName(false) == cppName);
+                if (conflicts.Any())
                 {
-                    name = path.GetCppName(true);
+                    // either we have multiple HTTP methods with the same operationId,
+                    // or we have multiple paths with the same last segment
+                    var pathWithoutParameters = path.PathUriWithoutParameters;
+                    name = pathWithoutParameters.Split('/')
+                        .Skip(1)
+                        .Select(x => x.MakeCppIdentifier()).Aggregate((x, y) => x + y) + "Async";
                 }
                 else
                 {
                     name = cppName;
                 }
             }
-            return name + "Async";
+            return name;
         }
 
     }
 }
 
-public static class StringExtensions
+public static class Extensions
 {
-  public static string ToCamelCase(this string methodName)
-  {
-    return methodName.ToUpperInvariant()[0] + methodName.Substring(1);
-  }
-
-  public static string MakeCppIdentifier(this string text)
-  {
-    var validCharsInCppIdentifiers = new Regex(@"[A-Za-z0-9_]");
-    // traverse the text, whenever an invalid character is found, remove it and make the next character uppercase
-    var sb = new StringBuilder();
-    var firstChar = true;
-    foreach (var c in text)
+    public static JsonObject ResolveRef(this JsonObject json, string refType)
     {
-      if (validCharsInCppIdentifiers.IsMatch(c.ToString()))
-      {
-        if (firstChar)
+        var refPath = refType.Split('/');
+        Debug.Assert(refPath[0] == "#");
+        var jsonNode = json;
+        foreach (var pathPart in refPath.Skip(1))
         {
-          sb.Append(c.ToString().ToUpperInvariant());
-          firstChar = false;
+            jsonNode = jsonNode[pathPart]!.AsObject();
         }
-        else
-        {
-          sb.Append(c);
-        }
-      }
-      else
-      {
-        firstChar = true;
-      }
+
+        return jsonNode;
     }
-    return sb.ToString();
-  }
+    public static string ToCamelCase(this string methodName)
+    {
+        return methodName.ToUpperInvariant()[0] + methodName.Substring(1);
+    }
+
+    public static string MakeCppIdentifier(this string text)
+    {
+        var validCharsInCppIdentifiers = new Regex(@"[A-Za-z0-9_]");
+        // traverse the text, whenever an invalid character is found, remove it and make the next character uppercase
+        var sb = new StringBuilder();
+        var firstChar = true;
+        foreach (var c in text)
+        {
+            if (validCharsInCppIdentifiers.IsMatch(c.ToString()))
+            {
+                if (firstChar)
+                {
+                    sb.Append(c.ToString().ToUpperInvariant());
+                    firstChar = false;
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            else
+            {
+                firstChar = true;
+            }
+        }
+        return sb.ToString();
+    }
 }
+
+

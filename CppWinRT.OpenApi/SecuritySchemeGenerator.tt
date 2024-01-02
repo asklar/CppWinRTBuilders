@@ -13,7 +13,8 @@ struct <#= _scheme.CppType #> {
     <#= apiKeyScheme.CppType #>() = default;
     std::wstring _key;
 
-    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
+    template<typename THttpClient = winrt::Windows::Web::Http::HttpClient, typename = std::enable_if_t<details::IsHttpClientIsh_v<THttpClient>>>
+    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const THttpClient& /*client*/) const
     {
         if (_key.empty())
         {
@@ -38,7 +39,8 @@ struct <#= _scheme.CppType #> {
     std::wstring _username;
     std::wstring _password;
 
-    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& client) const
+    template<typename THttpClient = winrt::Windows::Web::Http::HttpClient, typename = std::enable_if_t<details::IsHttpClientIsh_v<THttpClient>>>
+    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const THttpClient& client) const
     {
         auto credentials = winrt::Windows::Security::Credentials::PasswordCredential(L"<#= httpScheme.Resource #>", _username, _password);
         client.DefaultRequestHeaders().Authorization(winrt::Windows::Web::Http::Headers::HttpCredentialsHeaderValue(credentials));
@@ -47,7 +49,8 @@ struct <#= _scheme.CppType #> {
     <#= oauth2Scheme.CppType #> (std::wstring_view token) : _token(token) {}
     std::wstring _token;
 
-    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const winrt::Windows::Web::Http::HttpClient& /*client*/) const
+    template<typename THttpClient = winrt::Windows::Web::Http::HttpClient, typename = std::enable_if_t<details::IsHttpClientIsh_v<THttpClient>>>
+    void apply(const winrt::Windows::Web::Http::HttpRequestMessage& request, const THttpClient& /*client*/) const
     {
         request.Headers().Append(L"Authorization", L"Bearer " + _token);
     }

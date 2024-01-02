@@ -21,7 +21,7 @@
 // <#= Title #>
 // Version <#= Version #>
 
-namespace <#= Namespace #>
+namespace <#= Namespace #>::<#= ApiName #>
 {
 enum class ServerEnvironment
 {
@@ -45,11 +45,36 @@ constexpr std::array ServerConfigList =
 <# } #>
 };
 
-struct Void
+namespace details
 {
-    Void() = default;
-    template<typename TIn> Void(TIn&&) {}
+template<typename T>
+struct HasSendRequestAsync
+{
+  template<typename U, typename = decltype(std::declval<U>().SendRequestAsync(std::declval<winrt::Windows::Web::Http::HttpRequestMessage>()))>
+  static std::true_type test(int);
+
+  template<typename>
+  static std::false_type test(...);
+
+  static constexpr bool value = decltype(test<T>(0))::value;
 };
+
+template<typename T>
+struct HasClose
+{
+  template<typename U, typename = decltype(std::declval<U>().Close())>
+  static std::true_type test(int);
+
+  template<typename>
+  static std::false_type test(...);
+
+  static constexpr bool value = decltype(test<T>(0))::value;
+};
+
+template<typename T>
+constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>::value;
+
+}
 
 <# foreach (var security in Security) { #>
 <#= security.Value.GetCppDefinition() #>
@@ -128,48 +153,39 @@ struct <#= newType.Value.CppWinRTName.ToCamelCase() #>
 
 <# } #>
 
-namespace details
-{
-template<typename T>
-struct HasSendRequestAsync
-{
-  template<typename U, typename = decltype(std::declval<U>().SendRequestAsync(std::declval<winrt::Windows::Web::Http::HttpRequestMessage>()))>
-  static std::true_type test(int);
-
-  template<typename>
-  static std::false_type test(...);
-
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
-
-template<typename T>
-struct HasClose
-{
-  template<typename U, typename = decltype(std::declval<U>().Close())>
-  static std::true_type test(int);
-
-  template<typename>
-  static std::false_type test(...);
-
-  static constexpr bool value = decltype(test<T>(0))::value;
-};
-
-template<typename T>
-constexpr bool IsHttpClientIsh_v = HasSendRequestAsync<T>::value && HasClose<T>::value;
-
-}
 
 // APIs
 
+template<typename THttpClient = winrt::Windows::Web::Http::HttpClient, std::enable_if_t<details::IsHttpClientIsh_v<THttpClient>, int> = 0>
+struct Api
+{
+    THttpClient _client;
+    ServerEnvironment _serverEnvironment = ServerEnvironment::Default;
+
+    Api(THttpClient client) : _client(client) {}
+    Api() = default;
+    ~Api()
+    {
+        if constexpr (details::HasClose<THttpClient>::value)
+        {
+            _client.Close();
+        }
+    }
+
+    auto ServerUri() const
+    {
+        return std::find_if(ServerConfigList.begin(), ServerConfigList.end(), 
+            [e = _serverEnvironment](const auto& config) { return config.environment == e; })->uri;
+    }
 <# foreach (var path in Paths) { 
-var TSecuritySchemaTemplateTypeParam = (path.Security != null && path.Security.Count() > 0) ? $"typename TSecuritySchema = {path.DefaultSecurityCppType}," : string.Empty;
+var TSecuritySchemaTemplateTypeParam = (path.Security != null && path.Security.Count() > 0) ? $"template<typename TSecuritySchema = {path.DefaultSecurityCppType}>" : string.Empty;
 #>
 <#= path.DoxygenComment #>
-template<typename THttpClient, <#= TSecuritySchemaTemplateTypeParam #>ServerEnvironment serverEnvironment = ServerEnvironment::Default>
+<#= TSecuritySchemaTemplateTypeParam #>
 <# System.Diagnostics.Debug.WriteLine(path.PathUriTemplate);#>
-wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, true) #>)
+wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path) #>)
 {
-    constexpr auto serverUri = std::find_if(ServerConfigList.begin(), ServerConfigList.end(), [](const auto& config) { return config.environment == serverEnvironment; })->uri;
+    const auto serverUri = ServerUri();
     auto path = std::format(<#= ConstructPath(path) #>);
     winrt::Windows::Data::Json::JsonObject jsonBody;
 <# if (path.RequestBody != null) { #>
@@ -221,23 +237,35 @@ wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path
 <# } #>
     }
 }
+<# } #>
+};
 
-<#= path.DoxygenComment #>
-
-template<<#= TSecuritySchemaTemplateTypeParam  #>ServerEnvironment serverEnvironment = ServerEnvironment::Default>
-wil::com_task<<#= path.ResponseType.CppWinRTFullName #>> <#= GetPathCppName(path) #>(<#= GetCppWinRTParameters(path, false) #>)
+template<typename TFunctor>
+struct FunctorHttpClient
 {
-    auto _client = winrt::Windows::Web::Http::HttpClient();
-<# var TSecuritySchemaTemplateParam = (path.Security != null && path.Security.Count() > 0) ? ", TSecuritySchema" : ""; #>
-    auto ret = co_await <#= GetPathCppName(path) #><decltype(_client)<#= TSecuritySchemaTemplateParam#>, serverEnvironment>(<#= path.GetParametersNamesWithHttpClient() #>);
-    _client.Close();
-<# if (path.ResponseType.CppWinRTName == "Void") { #>
-    UNREFERENCED_PARAMETER(ret);
-    co_return Void{};
-<# } else { #> 
-    co_return ret;
-<# } #>
-}
-
-<# } #>
+    TFunctor _functor;
+    FunctorHttpClient(TFunctor&& functor) : _functor(std::move(functor)) {}
+    wil::com_task<winrt::Windows::Web::Http::HttpResponseMessage> SendRequestAsync(winrt::Windows::Web::Http::HttpRequestMessage request)
+    {
+        auto response_from_json = [](std::wstring_view jsonStr)
+            {
+                auto response = winrt::Windows::Web::Http::HttpResponseMessage(winrt::Windows::Web::Http::HttpStatusCode::Ok);
+                response.Content(winrt::Windows::Web::Http::HttpStringContent(jsonStr, winrt::Windows::Storage::Streams::UnicodeEncoding::Utf8, L"application/json"));
+                return response;
+            };
+        if constexpr (std::is_invocable_v<TFunctor, winrt::Windows::Web::Http::HttpRequestMessage>)
+        {
+            co_return response_from_json(_functor(request).Stringify());
+        }
+        else if constexpr (std::is_invocable_v<TFunctor>)
+        {
+            co_return response_from_json(_functor().Stringify());
+        }
+        else
+        {
+            static_assert(std::_Always_false<TFunctor>, "FunctorHttpClient must be constructed with a functor that takes either no arguments or an HttpRequestMessage");
+        }
+    }
+    void Close() noexcept {}
+};
 }
