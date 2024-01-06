@@ -48,6 +48,7 @@ struct SimpleOAuth : std::enable_shared_from_this<SimpleOAuth>
     std::wstring ClientSecret;
     std::wstring RedirectUri;
 
+#ifdef WINRT_Windows_ApplicationModel_Activation_H
     static bool OnReceivedCode(winrt::Windows::ApplicationModel::Activation::IActivatedEventArgs const& args)
     {
         if (args.Kind() == winrt::Windows::ApplicationModel::Activation::ActivationKind::Protocol)
@@ -56,29 +57,49 @@ struct SimpleOAuth : std::enable_shared_from_this<SimpleOAuth>
             if (protocolArgs)
             {
                 const auto uri = protocolArgs.Uri();
-                const auto qp = uri.QueryParsed();
-                winrt::hstring code;
-                winrt::hstring state;
-                for (const auto& pair : qp)
-                {
-                    if (pair.Name() == L"state")
-                    {
-                        state = pair.Value();
-                    }
-                    else if (pair.Name() == L"code")
-                    {
-                        code = pair.Value();
-                    }
-                }
-                if (!state.empty() && !code.empty() && _oauthMap.find(state.c_str()) != _oauthMap.end())
-                {
-                    auto oauth = _oauthMap[state.c_str()];
-                    if (uri.AbsoluteUri().starts_with(oauth->RedirectUri))
-                    {
-                        _oauthMap.erase(state.c_str());
-                        oauth->OnReceivedCode(code);
-                    }
-                }
+                return OnReceivedCode(uri);
+            }
+        }
+    }
+#ifdef WINRT_Microsoft_Windows_AppLifecycle_H
+    static bool OnReceivedCode(winrt::Microsoft::Windows::AppLifecycle::AppActivationArguments const& args)
+    {
+        if (args.Kind() == winrt::Microsoft::Windows::AppLifecycle::ExtendedActivationKind::Protocol)
+        {
+            auto protocolArgs = args.Data().try_as<winrt::Windows::ApplicationModel::Activation::IProtocolActivatedEventArgs>();
+            if (protocolArgs)
+            {
+                const auto uri = protocolArgs.Uri();
+                return OnReceivedCode(uri);
+            }
+        }
+    }
+#endif // WINRT_Microsoft_Windows_AppLifecycle_H
+#endif // WINRT_Windows_ApplicationModel_Activation_H
+
+    static bool OnReceivedCode(winrt::Windows::Foundation::Uri const& uri)
+    {
+        const auto qp = uri.QueryParsed();
+        winrt::hstring code;
+        winrt::hstring state;
+        for (const auto& pair : qp)
+        {
+            if (pair.Name() == L"state")
+            {
+                state = pair.Value();
+            }
+            else if (pair.Name() == L"code")
+            {
+                code = pair.Value();
+            }
+        }
+        if (!state.empty() && !code.empty() && _oauthMap.find(state.c_str()) != _oauthMap.end())
+        {
+            auto oauth = _oauthMap[state.c_str()];
+            if (uri.AbsoluteUri().starts_with(oauth->RedirectUri))
+            {
+                _oauthMap.erase(state.c_str());
+                oauth->OnReceivedCode(code);
                 return true;
             }
         }
