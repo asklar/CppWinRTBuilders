@@ -25,6 +25,9 @@
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>CppWinRTGenerator.cs</LastGenOutput>
     </None>
+    <None Update="OAuth.h">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="SecuritySchemeGenerator.tt">
       <Generator>TextTemplatingFilePreprocessor</Generator>
       <LastGenOutput>SecuritySchemeGenerator.cs</LastGenOutput>

@@ -18,11 +18,13 @@
 #include <winrt/Windows.Data.Json.h>
 #include <format>
 #include <numeric>
+#include <winrt/windows.security.authentication.web.h>
 #include <winrt/Windows.System.h>
 #include <winrt/Windows.ApplicationModel.Activation.h>
 #include "App.h"
 #include <wil/cppwinrt_helpers.h>
-#include <winrt/OAuth.h>
+
+#include <winrt/openapi/ArtInstitutionOfChicagoAPI.h>
 
 using namespace winrt;
 using namespace Windows::UI::Xaml;
@@ -187,6 +189,10 @@ namespace winrt::WinRTBuilderSample::implementation
 
         try {
             {
+                auto api = winrt::OpenApi::ArtInstitutionOfChicagoAPI::Api();
+                auto artists = co_await api.ArtistsAsync();
+            }
+            {
                 auto api = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api();
                 auto mockInventoryClient = winrt::OpenApi::SwaggerPetstoreOpenAPI30::FunctorHttpClient([]() {
                     auto json = JsonObject();
@@ -199,16 +205,35 @@ namespace winrt::WinRTBuilderSample::implementation
                 auto mockApi = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api(mockInventoryClient);
                 auto mockInventory = co_await mockApi.GetInventoryAsync();
 
-            }
+<<<<<<< Updated upstream
+
+                auto apikey = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api_key(L"special-key");
+                auto inventory = co_await api.GetInventoryAsync(apikey);
+=======
+        try {
 
             {
-                auto oauth = std::make_shared<SimpleOAuth>();
-                std::wstring _clientId = L"6d2f8c9e11c9f3910808";
+                std::wstring_view _azureAuth = L"https://login.microsoftonline.com/common/oauth2/authorize";
+                std::wstring _clientId;
+                std::wstring _redirectUri;
+                std::vector<std::wstring> _scopes;
+                auto oauthAuthorizationUrl = std::vformat(L"{}?client_id={}&response_type=code&redirect_uri={}&response_mode=query&scope={}",
+                    std::make_wformat_args(
+                        _azureAuth,
+                        _clientId,
+                        _redirectUri,
+                        std::accumulate(_scopes.begin(), _scopes.end(), std::wstring(), [](auto&& a, auto&& b) { return a + L" " + b; }))
+                );
+
+
+
+                auto oauth = std::make_shared<winrt::OpenApi::SwaggerPetstoreOpenAPI30::SimpleOAuth>();
+                _clientId = L"6d2f8c9e11c9f3910808";
                 std::wstring_view _clientSecret = L"354970a6e9d3b420115eef0dc81fb03aca64cd44";
                 auto _githubAuth = L"https://github.com/login/oauth/authorize";
                 std::wstring_view _githubToken = L"https://github.com/login/oauth/access_token";
-                std::wstring _redirectUri = L"winrtbuildersample://oauth";
-                std::vector<std::wstring> _scopes = { L"user" };
+                _redirectUri = L"winrtbuildersample://oauth";
+                _scopes.push_back(L"user");
 
                 oauth->AuthorizationUrl = _githubAuth;
                 oauth->TokenUrl = _githubToken;
@@ -216,18 +241,38 @@ namespace winrt::WinRTBuilderSample::implementation
                 oauth->ClientSecret = _clientSecret;
                 oauth->RedirectUri = _redirectUri;
 
-                auto result = co_await oauth->Authenticate(_scopes);
+                GUID guid;
+                CoCreateGuid(&guid);
+                wchar_t guidStr[40];
+                StringFromGUID2(guid, guidStr, static_cast<int>(std::size(guidStr)));
+
+
+                std::unordered_map<std::wstring, std::shared_ptr<SimpleOAuth>> _oauthMap;
+                _oauthMap[guidStr] = oauth;
+
+                auto evtToken = winrt::WinRTBuilderSample::implementation::App::OAuthCodeReceived.add([&_oauthMap](auto&& code, auto&& state) {
+                    auto oauth = _oauthMap[state.c_str()];
+                    oauth->OnReceivedCode(code);
+                    });
+
+                auto result = co_await oauth->Authenticate(_scopes, guidStr);
+                winrt::WinRTBuilderSample::implementation::App::OAuthCodeReceived.remove(evtToken);
 
                 auto code = result.AccessToken;
+                //_scopes.push_back(L"repo");
                 auto valid = result.IsValid();
                 UNREFERENCED_PARAMETER(valid);
-                myButton().Content(box_value(code));
+
+
+                    myButton().Content(box_value(code));
+
+                
             }
 
-            {
-                auto apikey = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api_key(L"special-key");
-                auto api = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api();
-                auto inventory = co_await api.GetInventoryAsync(apikey);
+
+            auto apikey = winrt::OpenApi::SwaggerPetstoreOpenAPI30::Api_key(L"special-key");
+            auto inventory = co_await winrt::OpenApi::SwaggerPetstoreOpenAPI30::GetInventoryAsync(apikey);
+>>>>>>> Stashed changes
 
                 for (auto const& [k, v] : inventory) {
                     std::wcout << k.c_str() << L" : " << v.GetNumber() << std::endl;

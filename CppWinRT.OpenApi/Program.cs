@@ -346,7 +346,8 @@ foreach (var c in System.IO.Path.GetInvalidFileNameChars())
 }
 
 File.WriteAllText(System.IO.Path.Combine(openApiFolder, filename), output);
-
+var programDirectory = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+File.Copy(System.IO.Path.Combine(programDirectory, "OAuth.h"), System.IO.Path.Combine(outFolder, "winrt", "OAuth.h"), true);
 
 namespace CppWinRT.OpenApi
 {

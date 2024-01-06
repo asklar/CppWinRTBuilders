@@ -2,6 +2,7 @@
 
 #include "App.h"
 #include "MainPage.h"
+#include <winrt/OAuth.h>
 
 using namespace winrt;
 using namespace Windows::ApplicationModel;
@@ -37,24 +38,8 @@ App::App()
 
 void App::OnActivated(Windows::ApplicationModel::Activation::IActivatedEventArgs const& args)
 {
-    if (args.Kind() == ActivationKind::Protocol)
-    {
-        auto protocolArgs = args.try_as<ProtocolActivatedEventArgs>();
-        if (protocolArgs)
-        {
-            auto qp = protocolArgs.Uri().QueryParsed();
-            auto code = qp.GetFirstValueByName(L"code");
-            winrt::hstring state;
-            for (const auto& pair : qp)
-            {
-                if (pair.Name() == L"state")
-                {
-                    state = pair.Value();
-                }
-            }
-            OAuthCodeReceived(code, state);
-        }
-    }
+    bool handled = SimpleOAuth::OnReceivedCode(args);
+    UNREFERENCED_PARAMETER(handled);
 }
 
 /// <summary>
